@@ -1,7 +1,7 @@
 CFLAGS=-Wall -Wextra $(shell pkg-config --cflags opencv)
 LDFLAGS=$(shell pkg-config --libs opencv zbar)
 
-all: build/main
+all: main
 
 build/main:
 	mkdir -p build
