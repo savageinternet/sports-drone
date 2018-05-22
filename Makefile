@@ -1,7 +1,7 @@
 CFLAGS=-Wall -Wextra $(shell pkg-config --cflags opencv)
 LDFLAGS=$(shell pkg-config --libs opencv zbar)
 
-all: main bgsub
+all: main bgsub pplfind
 
 build/main:
 	mkdir -p build
@@ -13,3 +13,6 @@ clean:
 
 bgsub:
 	g++ $(CFLAGS) $(LDFLAGS) bgsub.cpp -o build/bgsub
+
+pplfind:
+	g++ $(CFLAGS) $(LDFLAGS) pplfind.cpp -o build/pplfind
