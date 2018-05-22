@@ -16,3 +16,6 @@ bgsub:
 
 pplfind:
 	g++ $(CFLAGS) $(LDFLAGS) pplfind.cpp -o build/pplfind
+
+blobdetect:
+	g++ $(CFLAGS) $(LDFLAGS) blobdetect.cpp -o build/blobdetect
