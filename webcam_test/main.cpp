@@ -122,10 +122,9 @@ int main(int argc, char** argv) {
         }
 
         Ref<Result> result = readCodeFromFrame(reader, frame);
-        if (result.empty()) {
-            return 1;
+        if (!result.empty()) {
+            cout << result->getText()->getText() << endl;
         }
-        cout << result->getText()->getText() << endl;
         
         imshow(WINDOW_TITLE, frame);
 

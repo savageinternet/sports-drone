@@ -1,15 +1,16 @@
 #include "CvMatBitmapSource.h"
 
+#include <iostream>
 #include <stdio.h>
 
 using namespace cv;
+using namespace std;
 
 namespace zxing {
 
 CvMatBitmapSource::CvMatBitmapSource(const Mat& mat) :
-    LuminanceSource(mat.cols, mat.rows),
-    _mat(mat) {
-  cvtColor(_mat, _mat, COLOR_BGR2GRAY);
+    LuminanceSource(mat.cols, mat.rows) {
+  cvtColor(mat, _mat, COLOR_BGR2GRAY);
 }
 
 CvMatBitmapSource::~CvMatBitmapSource() {}
@@ -28,6 +29,7 @@ ArrayRef<char> CvMatBitmapSource::getRow(int y, ArrayRef<char> row) const {
     row = ArrayRef<char>(new char[width], width);
   }
   for (int x = 0; x < _width; x++) {
+    cout << "(" << y << ", " << x << ") => " << (int) (_mat.at<char>(y, x)) << endl;
     row[x] = _mat.at<char>(y, x);
   }
   return row;

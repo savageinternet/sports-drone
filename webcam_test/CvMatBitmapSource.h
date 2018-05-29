@@ -10,7 +10,7 @@ namespace zxing {
 
 class CvMatBitmapSource : public LuminanceSource {
 private:
-  const Mat& _mat;
+  Mat _mat;
   int _width;
   int _height;
 
