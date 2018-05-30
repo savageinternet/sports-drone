@@ -51,40 +51,36 @@ void ofApp::setup() {
     movie.setVolume(0);
     movie.play();
     
-    grayFrame.allocate(movie.getWidth(), movie.getHeight(), OF_IMAGE_GRAYSCALE);
-    
-    threshold_b = true;
-    
-    // set the threshold value. higher number : more whiter
-    threshold_value = 90;
+    colorFrame.allocate(movie.getWidth(), movie.getHeight(), OF_IMAGE_GRAYSCALE);
     
     //create Background Subtractor object
-    pMOG2 = createBackgroundSubtractorMOG2(); //MOG2 approach
+    bgsub = createBackgroundSubtractorMOG2(); //MOG2 or KNN (? can't get MOG or GMG?)
     
-    contourFinder.setMinAreaRadius(1);
-    contourFinder.setMaxAreaRadius(10);
-    contourFinder.setThreshold(15);
+    contourFinder.setMinAreaRadius(5);
+    contourFinder.setMaxAreaRadius(15);
+    contourFinder.setAutoThreshold(true); // setThreshold(15) ?
     
     // wait for a frame before forgetting something
     tracker.setPersistence(30);
-    // an object can move up to 20 pixels per frame
-    tracker.setMaximumDistance(20);
+    // an object can move up to 30 pixels per frame
+    tracker.setMaximumDistance(30);
 }
 
 void ofApp::update() {
     movie.update();
     if(movie.isFrameNew()) {
-        blur(movie, 10);
-        grayFrame.setFromPixels(movie.getPixels());
-        cv::cvtColor(toCv(grayFrame), grayFrameMat, cv::COLOR_RGB2GRAY);
-        if (threshold_b) {
+        blur(movie, blurRadius);
+        colorFrame.setFromPixels(movie.getPixels());
+        colorFrameMat = toCv(colorFrame);
+        cv::cvtColor(toCv(colorFrame), grayFrameMat, cv::COLOR_RGB2GRAY);
+        if (thresholdB) {
             // just do simple thresholding on the image
-            threshold(grayFrameMat, grayFrameMat, threshold_value);
+            threshold(grayFrameMat, grayFrameMat, thresholdValue);
             contourFinder.findContours(grayFrameMat);
         } else {
-            // ok, now we do the magic with the MOG2 shit for foreground/background finding
-            pMOG2->apply(grayFrameMat, fgMaskMOG2);
-            contourFinder.findContours(fgMaskMOG2);
+            // ok, now we do the magic with the foreground/background finding
+            bgsub->apply(colorFrameMat, fgMask);
+            contourFinder.findContours(fgMask);
         }
         tracker.track(contourFinder.getBoundingRects());
     }
@@ -92,7 +88,7 @@ void ofApp::update() {
 
 void ofApp::draw() {
     ofSetColor(255);
-    grayFrame.draw(0,0);
+    drawMat(grayFrameMat,0,0);
     
     if (grayFrameMat.dims > 0) { // don't run it before we've assigned some data here
         

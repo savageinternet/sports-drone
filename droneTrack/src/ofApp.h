@@ -29,17 +29,20 @@ public:
     void draw();
     
     ofVideoPlayer movie;
-    ofImage grayFrame;
+    ofImage colorFrame;
+    Mat colorFrameMat;
     Mat grayFrameMat;
     
-    bool threshold_b;
+    int blurRadius = 10;
+    
+    bool thresholdB = false;
     
     // if we want to threshold, we use this:
-    int threshold_value;
+    int thresholdValue = 90;
     
     // otherwise, we use background subtraction:
-    Mat fgMaskMOG2;
-    Ptr<BackgroundSubtractor> pMOG2; //MOG2 Background subtractor
+    Mat fgMask;
+    Ptr<BackgroundSubtractor> bgsub; //MOG2 Background subtractor
     
     
     ContourFinder contourFinder;
