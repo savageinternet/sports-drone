@@ -16,14 +16,18 @@ using namespace zxing;
 
 class OfxLuminanceSource : public LuminanceSource {
 private:
-    const ofPixels& _pixels;
+    ofPixels _pixels;
     
 public:
+    OfxLuminanceSource(const ofPixels& pixels);
     OfxLuminanceSource(const ofxCvGrayscaleImage& image);
     ~OfxLuminanceSource();
     
     ArrayRef<char> getRow(int y, ArrayRef<char> row) const;
     ArrayRef<char> getMatrix() const;
+    
+    bool isCropSupported() const;
+    Ref<LuminanceSource> crop(int left, int top, int width, int height) const;
 };
 
 #endif /* OfxLuminanceSource_hpp */
