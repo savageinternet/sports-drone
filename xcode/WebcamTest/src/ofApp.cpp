@@ -1,7 +1,8 @@
-#include <zxing/datamatrix/DataMatrixReader.h>
+#include <zxing/Exception.h>
 #include <zxing/common/Counted.h>
 #include <zxing/common/GlobalHistogramBinarizer.h>
-#include <zxing/Exception.h>
+#include <zxing/datamatrix/DataMatrixReader.h>
+#include <zxing/ResultPoint.h>
 
 #include "ofApp.h"
 #include "OfxLuminanceSource.hpp"
@@ -55,11 +56,33 @@ void ofApp::update(){
     }
 }
 
+
+
 //--------------------------------------------------------------
+void ofApp::drawResultPointLine(Ref<ResultPoint> p0, Ref<ResultPoint> p1) {
+    ofDrawLine(p0->getX(), p0->getY(), p1->getX(), p1->getY());
+}
+
 void ofApp::draw(){
-    ofSetHexColor(0xffffff);
     frame.draw(0, 0);
-    ofDrawBitmapString(resultText, 20, 20);
+    if (!result.empty()) {
+        ArrayRef<Ref<ResultPoint>> ps = result->getResultPoints();
+        int n = ps->size();
+        if (n >= 4) {
+            ofSetHexColor(0xff0000);
+            Ref<ResultPoint> pA = ps[0];
+            Ref<ResultPoint> pB = ps[1];
+            Ref<ResultPoint> pC = ps[2];
+            Ref<ResultPoint> pD = ps[3];
+            drawResultPointLine(pA, pB);
+            drawResultPointLine(pA, pC);
+            drawResultPointLine(pB, pD);
+            drawResultPointLine(pC, pD);
+        }
+    }
+                       
+    ofSetHexColor(0xffffff);
+    ofDrawBitmapStringHighlight(resultText, 20, 20);
 }
 
 //--------------------------------------------------------------

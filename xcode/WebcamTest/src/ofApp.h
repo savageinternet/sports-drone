@@ -4,6 +4,7 @@
 
 #include <zxing/datamatrix/DataMatrixReader.h>
 #include <zxing/common/Counted.h>
+#include <zxing/ResultPoint.h>
 
 #include "ofMain.h"
 #include "ofxOpenCv.h"
@@ -14,7 +15,8 @@ using namespace zxing::datamatrix;
 class ofApp : public ofBaseApp{
 private:
     static const string MSG_NO_CODE_DETECTED;
-
+    void drawResultPointLine(Ref<ResultPoint> p0, Ref<ResultPoint> p1);
+    
 public:
     void setup();
     void update();
