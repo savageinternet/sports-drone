@@ -1,15 +1,32 @@
+#include <zxing/datamatrix/DataMatrixReader.h>
+#include <zxing/common/Counted.h>
+#include <zxing/common/GlobalHistogramBinarizer.h>
+#include <zxing/Exception.h>
+
 #include "ofApp.h"
+#include "OfxLuminanceSource.hpp"
+#include "WebcamTestConstants.h"
+
+using namespace std;
+using namespace zxing;
+using namespace zxing::datamatrix;
+
+const string ofApp::MSG_NO_CODE_DETECTED = "No code detected";
 
 //--------------------------------------------------------------
 void ofApp::setup(){
-    camWidth = 320;
-    camHeight = 240;
     vidGrabber.setDeviceID(0);
-    vidGrabber.setDesiredFrameRate(30);
-    vidGrabber.initGrabber(camWidth, camHeight);
+    vidGrabber.setDesiredFrameRate(WebcamTestConstants::CAMERA_FPS);
+    vidGrabber.initGrabber(WebcamTestConstants::CAMERA_WIDTH,
+                           WebcamTestConstants::CAMERA_HEIGHT);
     
-    colorImg.allocate(camWidth, camHeight);
-    grayImage.allocate(camWidth, camHeight);
+    frame.allocate(WebcamTestConstants::CAMERA_WIDTH,
+                   WebcamTestConstants::CAMERA_HEIGHT);
+    frameGray.allocate(WebcamTestConstants::CAMERA_WIDTH,
+                       WebcamTestConstants::CAMERA_HEIGHT);
+    reader = new DataMatrixReader();
+    result = NULL;
+    resultText = MSG_NO_CODE_DETECTED;
 }
 
 //--------------------------------------------------------------
@@ -17,16 +34,32 @@ void ofApp::update(){
     ofBackground(0, 0, 0);
     vidGrabber.update();
     if (vidGrabber.isFrameNew()) {
-        colorImg.setFromPixels(vidGrabber.getPixels());
-        grayImage = colorImg;
+        frame.setFromPixels(vidGrabber.getPixels());
+        frameGray = frame;
+        
+        // detect Aztec code
+        Ref<OfxLuminanceSource> source(new OfxLuminanceSource(frameGray));
+        Ref<Binarizer> binarizer(new GlobalHistogramBinarizer(source));
+        Ref<BinaryBitmap> image(new BinaryBitmap(binarizer));
+        try {
+            result = reader->decode(image, DecodeHints::DATA_MATRIX_HINT);
+            if (result.empty()) {
+                resultText = MSG_NO_CODE_DETECTED;
+            } else {
+                resultText = result->getText()->getText();
+            }
+        } catch (const zxing::Exception& e) {
+            resultText = e.what();
+            result = NULL;
+        }
     }
 }
 
 //--------------------------------------------------------------
 void ofApp::draw(){
     ofSetHexColor(0xffffff);
-    colorImg.draw(0, 0);
-    grayImage.draw(320, 0);
+    frame.draw(0, 0);
+    ofDrawBitmapString(resultText, 20, 20);
 }
 
 //--------------------------------------------------------------

@@ -1,9 +1,19 @@
 #pragma once
 
+#include <string>
+
+#include <zxing/datamatrix/DataMatrixReader.h>
+#include <zxing/common/Counted.h>
+
 #include "ofMain.h"
 #include "ofxOpenCv.h"
 
+using namespace zxing;
+using namespace zxing::datamatrix;
+
 class ofApp : public ofBaseApp{
+private:
+    static const string MSG_NO_CODE_DETECTED;
 
 public:
     void setup();
@@ -23,10 +33,9 @@ public:
     void gotMessage(ofMessage msg);
 		
     ofVideoGrabber vidGrabber;
-    
-    ofxCvColorImage colorImg;
-    ofxCvGrayscaleImage grayImage;
-    
-    int camWidth;
-    int camHeight;
+    ofxCvColorImage frame;
+    ofxCvGrayscaleImage frameGray;
+    Ref<DataMatrixReader> reader;
+    Ref<Result> result;
+    string resultText;
 };

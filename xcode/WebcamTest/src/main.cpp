@@ -1,13 +1,13 @@
 #include "ofMain.h"
 #include "ofApp.h"
 
+#include "WebcamTestConstants.h"
+
 //========================================================================
-int main( ){
-	ofSetupOpenGL(640,240,OF_WINDOW);			// <-------- setup the GL context
+int main() {
+    ofSetupOpenGL(WebcamTestConstants::CAMERA_WIDTH,
+                  WebcamTestConstants::CAMERA_HEIGHT,
+                  OF_WINDOW);
 
-	// this kicks off the running of my app
-	// can be OF_WINDOW or OF_FULLSCREEN
-	// pass in width and height too:
 	ofRunApp(new ofApp());
-
 }
