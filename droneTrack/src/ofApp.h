@@ -2,6 +2,7 @@
 
 #include "ofMain.h"
 #include "ofxCv.h"
+#include "playerTracker.hpp"
 
 using namespace cv;
 using namespace ofxCv;
@@ -16,8 +17,8 @@ public:
     Glow()
     :startedDying(0) {
     }
-    void setup(const cv::Rect& track);
-    void update(const cv::Rect& track);
+    void setup(const Player& track);
+    void update(const Player& track);
     void kill();
     void draw();
 };
@@ -27,6 +28,7 @@ public:
     void setup();
     void update();
     void draw();
+    void keyPressed(int keycode);
     
     ofVideoPlayer movie;
     ofImage colorFrame;
@@ -44,7 +46,7 @@ public:
     Mat fgMask;
     Ptr<BackgroundSubtractor> bgsub; //MOG2 Background subtractor
     
-    
     ContourFinder contourFinder;
     RectTrackerFollower<Glow> tracker;
+    //PlayerTracker tracker;
 };

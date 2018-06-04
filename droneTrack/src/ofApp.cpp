@@ -5,13 +5,13 @@ using namespace cv;
 
 const float dyingTime = 1;
 
-void Glow::setup(const cv::Rect& track) {
+void Glow::setup(const Player& track) {
     color.setHsb(ofRandom(0, 255), 255, 255);
     cur = toOf(track).getCenter();
     smooth = cur;
 }
 
-void Glow::update(const cv::Rect& track) {
+void Glow::update(const Player& track) {
     cur = toOf(track).getCenter();
     smooth.interpolate(cur, .5);
     all.addVertex(cur.x, cur.y);
@@ -58,10 +58,10 @@ void ofApp::setup() {
     
     contourFinder.setMinAreaRadius(5);
     contourFinder.setMaxAreaRadius(15);
-    contourFinder.setAutoThreshold(true); // setThreshold(15) ?
+    contourFinder.setThreshold(15);
     
-    // wait for a frame before forgetting something
-    tracker.setPersistence(30);
+    // wait half a second (at 32fps) before forgetting something
+    tracker.setPersistence(16);
     // an object can move up to 30 pixels per frame
     tracker.setMaximumDistance(30);
 }
@@ -82,7 +82,19 @@ void ofApp::update() {
             bgsub->apply(colorFrameMat, fgMask);
             contourFinder.findContours(fgMask);
         }
-        tracker.track(contourFinder.getBoundingRects());
+        
+        /* NOTE from VALKYRIE : under construction :3
+         std::vector<Player> foundPlayers;
+        for(unsigned int i = 0; i < contourFinder.getBoundingRects().size(); i++) {
+            Player p(contourFinder.getBoundingRects().at(i));
+            p.velocity = toOf(contourFinder.getVelocity(i));
+            
+            // extract the average pixel color from around the centroid? need to think about exactly what to do here. be sure to use the blurred video, I guess, since it will de-noise shit?
+            //p.jerseyColor = ???
+            
+            foundPlayers.push_back(p);
+        }*/
+        tracker.track(contourFinder.getBoundingRects());//foundPlayers);
     }
 }
 
@@ -116,7 +128,66 @@ void ofApp::draw() {
     // draw the rest of the stuff
     contourFinder.draw();
     vector<Glow>& followers = tracker.getFollowers();
-    for(int i = 0; i < followers.size(); i++) {
+    /*for(int i = 0; i < followers.size(); i++) {
         followers[i].draw();
+    }*/
+    
+    // visualize labels. from https://github.com/kylemcdonald/ofxCv/blob/master/example-contours-tracking/src/ofApp.cpp
+    for(int i = 0; i < contourFinder.size(); i++) {
+        ofPoint center = toOf(contourFinder.getCenter(i));
+        ofPushMatrix();
+        ofTranslate(center.x, center.y);
+        int label = contourFinder.getLabel(i);
+        uint age = tracker.getAge(label);
+        if (age > 12) {
+            string msg = ofToString(label) + ":" + ofToString(age);
+            ofDrawBitmapString(msg, 0, 0);
+            ofVec2f velocity = toOf(contourFinder.getVelocity(i));
+            ofScale(5, 5);
+            ofDrawLine(0, 0, velocity.x, velocity.y);
+        }
+        ofPopMatrix();
+    }
+    
+    // this chunk of code visualizes the creation and destruction of labels
+    const vector<unsigned int>& currentLabels = tracker.getCurrentLabels();
+    const vector<unsigned int>& previousLabels = tracker.getPreviousLabels();
+    const vector<unsigned int>& newLabels = tracker.getNewLabels();
+    const vector<unsigned int>& deadLabels = tracker.getDeadLabels();
+    ofSetColor(cyanPrint);
+    for(int i = 0; i < currentLabels.size(); i++) {
+        int j = currentLabels[i];
+        ofDrawLine(j, 0, j, 4);
+    }
+    ofSetColor(magentaPrint);
+    for(int i = 0; i < previousLabels.size(); i++) {
+        int j = previousLabels[i];
+        ofDrawLine(j, 4, j, 8);
+    }
+    ofSetColor(yellowPrint);
+    for(int i = 0; i < newLabels.size(); i++) {
+        int j = newLabels[i];
+        ofDrawLine(j, 8, j, 12);
+    }
+    ofSetColor(ofColor::white);
+    for(int i = 0; i < deadLabels.size(); i++) {
+        int j = deadLabels[i];
+        ofDrawLine(j, 12, j, 16);
+    }
+}
+
+void ofApp::keyPressed(int keycode) {
+    switch(keycode) {
+        case 'l':
+            ofFileDialogResult result = ofSystemLoadDialog("Load new video file");
+            if(result.bSuccess) {
+                string path = result.getPath();
+                movie.load(path);
+                movie.setVolume(0);
+                movie.play();
+            }
+            break;
+        /*default:
+            break;*/
     }
 }
