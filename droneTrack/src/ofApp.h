@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ofMain.h"
+#include "ofxGui.h"
 #include "ofxCv.h"
 #include "playerTracker.hpp"
 
@@ -28,7 +29,6 @@ public:
     void setup();
     void update();
     void draw();
-    void keyPressed(int keycode);
     
     ofVideoPlayer movie;
     ofImage colorFrame;
@@ -49,4 +49,17 @@ public:
     ContourFinder contourFinder;
     RectTrackerFollower<Glow> tracker;
     //PlayerTracker tracker;
+    
+    ofParameterGroup parameters;
+    ofParameter<int> numberPlayers;
+    ofParameter<int> videoEnumChooser;
+    ofParameter<int> sportEnumChooser;
+    ofParameter<ofColor> team1Color;
+    ofParameter<ofColor> team2Color;
+    
+    ofxButton loadVideo;
+    
+    ofxPanel gui;
+    
+    void loadVideoPressed();
 };

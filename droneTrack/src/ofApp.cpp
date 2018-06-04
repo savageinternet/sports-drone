@@ -64,6 +64,18 @@ void ofApp::setup() {
     tracker.setPersistence(16);
     // an object can move up to 30 pixels per frame
     tracker.setMaximumDistance(30);
+    
+    // the GUI bits
+    parameters.setName("Sport Infoz");
+    parameters.add(numberPlayers.set("Num Players:",10,0,22));
+    parameters.add(videoEnumChooser.set("Video Resolution:",0,0,2));
+    parameters.add(sportEnumChooser.set("Sport:",0,0,2));
+    parameters.add(team1Color.set("Team 1 Color",ofColor(127),ofColor(0,0),ofColor(255)));
+    parameters.add(team2Color.set("Team 2 Color",ofColor(127),ofColor(0,0),ofColor(255)));
+    gui.setup(parameters);
+    
+    loadVideo.addListener(this, &ofApp::loadVideoPressed);
+    gui.add(loadVideo.setup("Load new video"));
 }
 
 void ofApp::update() {
@@ -174,20 +186,17 @@ void ofApp::draw() {
         int j = deadLabels[i];
         ofDrawLine(j, 12, j, 16);
     }
+    
+    // this is all we have to do to draw the GUI???? :D :D :D
+    gui.draw();
 }
 
-void ofApp::keyPressed(int keycode) {
-    switch(keycode) {
-        case 'l':
-            ofFileDialogResult result = ofSystemLoadDialog("Load new video file");
-            if(result.bSuccess) {
-                string path = result.getPath();
-                movie.load(path);
-                movie.setVolume(0);
-                movie.play();
-            }
-            break;
-        /*default:
-            break;*/
+void ofApp::loadVideoPressed() {
+    ofFileDialogResult result = ofSystemLoadDialog("Load new video file");
+    if(result.bSuccess) {
+        string path = result.getPath();
+        movie.load(path);
+        movie.setVolume(0);
+        movie.play();
     }
 }
