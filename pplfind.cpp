@@ -15,7 +15,7 @@ const char* keys =
     "{ help h      |                     | print help message }"
     "{ image i     |                     | specify input image}"
     "{ camera c    |                     | enable camera capturing }"
-    "{ video v     | ../videos/jugger-drone-cut.mp4   | use video as input }"
+    "{ video v     | ../video/jugger-boom-corr.mp4   | use video as input }"
     "{ directory d |                     | images directory}"
 };
 static void detectAndDraw(const HOGDescriptor &hog, Mat &img)
@@ -34,7 +34,7 @@ static void detectAndDraw(const HOGDescriptor &hog, Mat &img)
     {
         Rect r = found[i];
         size_t j;
-        // Do not add small detections inside a bigger detection.
+        /* Small detections inside a bigger detection. (uncomment to hide)*/
         for ( j = 0; j < found.size(); j++ )
             if ( j != i && (r & found[j]) == r )
                 break;
@@ -70,7 +70,7 @@ int main(int argc, char** argv)
     hog.setSVMDetector(HOGDescriptor::getDefaultPeopleDetector());
     namedWindow("people detector", 1);
     string pattern_glob = "";
-    string video_filename = "../video/jugger-drone-cut.mp4";
+    string video_filename = "../video/jugger-boom-corr.mp4";
     int camera_id = -1;
     if (parser.has("directory"))
     {

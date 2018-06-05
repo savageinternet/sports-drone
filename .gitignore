@@ -1,3 +1,5 @@
 main
 *.o
 build/*
+droneTrack/bin/*
+droneTrack/droneTrack.xcodeproj/
