@@ -19,6 +19,7 @@
 		F634574D20BEF43400C33E96 /* libzxing.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F634574C20BEF43400C33E96 /* libzxing.a */; };
 		F634575120BEF4AB00C33E96 /* OfxLuminanceSource.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F634574F20BEF4AB00C33E96 /* OfxLuminanceSource.cpp */; };
 		F6ABB58020BF08D200189DF3 /* libiconv.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = F6ABB57F20BF08D200189DF3 /* libiconv.tbd */; };
+		F6B0465220C1C79000855006 /* ThresholdBinarizer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F6B0465020C1C79000855006 /* ThresholdBinarizer.cpp */; };
 		FBE5C1BF5F0A1475F0E60CEF /* ofxCvHaarFinder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9118C90C3C1D36672121F5E7 /* ofxCvHaarFinder.cpp */; };
 /* End PBXBuildFile section */
 
@@ -402,6 +403,8 @@
 		F634574F20BEF4AB00C33E96 /* OfxLuminanceSource.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = OfxLuminanceSource.cpp; sourceTree = "<group>"; };
 		F634575020BEF4AB00C33E96 /* OfxLuminanceSource.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = OfxLuminanceSource.hpp; sourceTree = "<group>"; };
 		F6ABB57F20BF08D200189DF3 /* libiconv.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libiconv.tbd; path = usr/lib/libiconv.tbd; sourceTree = SDKROOT; };
+		F6B0465020C1C79000855006 /* ThresholdBinarizer.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ThresholdBinarizer.cpp; sourceTree = "<group>"; };
+		F6B0465120C1C79000855006 /* ThresholdBinarizer.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ThresholdBinarizer.hpp; sourceTree = "<group>"; };
 		F87187A95A42413313E32EF4 /* expr.hpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; name = expr.hpp; path = ../../../../../lib/of_v0.10.0_osx_release/addons/ofxOpenCv/libs/opencv/include/opencv2/cudev/expr/expr.hpp; sourceTree = SOURCE_ROOT; };
 		FA3D521D9D6943F712A1621C /* motion_stabilizing.hpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; name = motion_stabilizing.hpp; path = ../../../../../lib/of_v0.10.0_osx_release/addons/ofxOpenCv/libs/opencv/include/opencv2/videostab/motion_stabilizing.hpp; sourceTree = SOURCE_ROOT; };
 		FA78D064AF1FD6F46012C066 /* common.hpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; name = common.hpp; path = ../../../../../lib/of_v0.10.0_osx_release/addons/ofxOpenCv/libs/opencv/include/opencv2/core/cuda/common.hpp; sourceTree = SOURCE_ROOT; };
@@ -1147,6 +1150,8 @@
 				F634574A20BEED1C00C33E96 /* WebcamTestConstants.h */,
 				F634574F20BEF4AB00C33E96 /* OfxLuminanceSource.cpp */,
 				F634575020BEF4AB00C33E96 /* OfxLuminanceSource.hpp */,
+				F6B0465020C1C79000855006 /* ThresholdBinarizer.cpp */,
+				F6B0465120C1C79000855006 /* ThresholdBinarizer.hpp */,
 			);
 			path = src;
 			sourceTree = SOURCE_ROOT;
@@ -1327,6 +1332,7 @@
 				FBE5C1BF5F0A1475F0E60CEF /* ofxCvHaarFinder.cpp in Sources */,
 				849EDD98783E08B55646955C /* ofxCvImage.cpp in Sources */,
 				1390902A64E45C0DF9BC6368 /* ofxCvFloatImage.cpp in Sources */,
+				F6B0465220C1C79000855006 /* ThresholdBinarizer.cpp in Sources */,
 				E95074EFC591A5D50E97A1C7 /* ofxCvGrayscaleImage.cpp in Sources */,
 				F634575120BEF4AB00C33E96 /* OfxLuminanceSource.cpp in Sources */,
 			);
