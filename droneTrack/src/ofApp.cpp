@@ -9,6 +9,7 @@ void Glow::setup(const Player& track) {
     color.setHsb(ofRandom(0, 255), 255, 255);
     cur = toOf(track).getCenter();
     smooth = cur;
+    recorded = false;
 }
 
 void Glow::update(const Player& track) {
@@ -43,6 +44,34 @@ void Glow::draw() {
     ofPopStyle();
 }
 
+void Glow::record(std::ofstream& fileStream, bool forceRecord) {
+    if(((dead || startedDying) && !recorded) || forceRecord) {
+        doRecord(fileStream);
+    }
+}
+
+void Glow::record(std::ofstream& fileStream) {
+    bool forceRecord = false;
+    record(fileStream, forceRecord);
+}
+
+void Glow::doRecord(std::ofstream& fileStream) {
+    json j;
+    j["label"] = label;
+    j["path"] = {};
+    for (int i = 0; i < all.getVertices().size(); i++) {
+        j["path"].push_back({all.getVertices().at(i).x, all.getVertices().at(i).y});
+    }
+    j["born"] = ofGetElapsedTimef() - age;
+    if(dead) {
+        j["died"] = startedDying;
+    } else {
+        j["died"] = false;
+    }
+    fileStream << j.dump() << "\n";
+    recorded = true;
+}
+
 void ofApp::setup() {
     ofSetVerticalSync(true);
     ofBackground(0);
@@ -68,11 +97,11 @@ void ofApp::setup() {
     // the GUI bits
     // parameters of the video processing
     processingParameters.setName("Processing Parameters");
-    processingParameters.add(minRadius.set("Min radius:",5,0,100));
+    processingParameters.add(minRadius.set("Min radius:",7,0,100));
     processingParameters.add(maxRadius.set("Max radius:",15,0,100));
-    processingParameters.add(persistence.set("Persistence (frames):",16,0,160));
-    processingParameters.add(maxVelocity.set("Max velocity:",30,0,100));
-    processingParameters.add(blurRadius.set("Blur radius:",10,0,100));
+    processingParameters.add(persistence.set("Persistence (frames):",54,0,160));
+    processingParameters.add(maxVelocity.set("Max velocity:",15,0,100));
+    processingParameters.add(blurRadius.set("Blur radius:",12,0,100));
     processingParameters.add(thresholdB.set("Simple threshold?",false));
     processingParameters.add(thresholdValue.set("Threshold:",90,0,255));
     processingGui.setup(processingParameters);
@@ -84,9 +113,13 @@ void ofApp::setup() {
     sportParameters.add(sportEnumChooser.set("Sport:",0,0,2));
     sportParameters.add(team1Color.set("Team 1 Color",ofColor(127),ofColor(0,0),ofColor(255)));
     sportParameters.add(team2Color.set("Team 2 Color",ofColor(127),ofColor(0,0),ofColor(255)));
+    sportParameters.add(recordRunthrough.set("Record full run-through",false));
     gui.setup(sportParameters);
     
     loadVideo.addListener(this, &ofApp::loadVideoPressed);
+    recordRunthrough.enableEvents(); // can we add an event to a boolean?
+    recordRunthrough.addListener(this, &ofApp::recordRunthroughPressed);
+    forceRecord = false;
     gui.add(loadVideo.setup("Load new video"));
     
     videoDetails = *new SportVideo();
@@ -94,6 +127,22 @@ void ofApp::setup() {
 
 void ofApp::update() {
     movie.update();
+    
+    // now change things the user input
+    contourFinder.setMinAreaRadius(minRadius);
+    contourFinder.setMaxAreaRadius(maxRadius);
+    contourFinder.setThreshold(thresholdValue);
+    tracker.setPersistence(persistence);
+    tracker.setMaximumDistance(maxVelocity);
+    videoDetails.updateExpectedPlayerCount(numberPlayers);
+    videoDetails.updateSport(static_cast<SportName>(sportEnumChooser.get()));
+    
+    // stop recording when we get to the end
+    if(recordRunthrough && movie.getIsMovieDone()) {
+        recordRunthrough = false;
+        forceRecord = true;
+    }
+    
     if(movie.isFrameNew()) {
         blur(movie, blurRadius);
         colorFrame.setFromPixels(movie.getPixels());
@@ -122,15 +171,6 @@ void ofApp::update() {
         }
         tracker.track(/*foundPlayers);*/contourFinder.getBoundingRects());
     }
-    
-    // now change things the user input
-    contourFinder.setMinAreaRadius(minRadius);
-    contourFinder.setMaxAreaRadius(maxRadius);
-    contourFinder.setThreshold(thresholdValue);
-    tracker.setPersistence(persistence);
-    tracker.setMaximumDistance(maxVelocity);
-    videoDetails.updateExpectedPlayerCount(numberPlayers);
-    videoDetails.updateSport(static_cast<SportName>(sportEnumChooser.get()));
 }
 
 void ofApp::draw() {
@@ -163,9 +203,18 @@ void ofApp::draw() {
     // draw the rest of the stuff
     contourFinder.draw();
     vector<Glow>& followers = tracker.getFollowers();
-    /*for(int i = 0; i < followers.size(); i++) {
+    for(int i = 0; i < followers.size(); i++) {
         followers[i].draw();
-    }*/
+        if (recordRunthrough) followers[i].record(recordingFile, forceRecord);
+    }
+    
+    // once we've finished the video, we want to force everything to record into the file. after that, clear
+    // our memories of EVERYTHING woooOOOOOooOOOoooooOooo...
+    if(forceRecord) {
+        forceRecord = false;
+        finalizeRecording();
+        recordingFile.close();
+    }
     
     // visualize labels. from https://github.com/kylemcdonald/ofxCv/blob/master/example-contours-tracking/src/ofApp.cpp
     for(int i = 0; i < contourFinder.size(); i++) {
@@ -174,7 +223,8 @@ void ofApp::draw() {
         ofTranslate(center.x, center.y);
         int label = contourFinder.getLabel(i);
         uint age = tracker.getAge(label);
-        if (age > 12) {
+        followers[i].age = age;
+        if (age > 32) { // if it has lived for at least 1s, draw it.
             string msg = ofToString(label) + ":" + ofToString(age);
             ofDrawBitmapString(msg, 0, 0);
             ofVec2f velocity = toOf(contourFinder.getVelocity(i));
@@ -224,4 +274,22 @@ void ofApp::loadVideoPressed() {
         movie.play();
         videoDetails.updatePixelSize(movie.getPixels());
     }
+}
+
+// when the user presses the record button, we want to reset everything.
+void ofApp::recordRunthroughPressed(bool& recordB) {
+    if (recordB) {
+        movie.setPosition(0.0f);
+        tracker = *new RectTrackerFollower<Glow>();
+        recordingFile.open ("/Users/valkyrie/projects/savage-internet/sports drone/video/runthrough.txt");
+        movie.setLoopState(OF_LOOP_NONE);
+    }
+}
+
+void ofApp::finalizeRecording() {
+    json j;
+    //j["sport"] = sportVideo.
+    
+    movie.setLoopState(OF_LOOP_NORMAL);
+    movie.play();
 }

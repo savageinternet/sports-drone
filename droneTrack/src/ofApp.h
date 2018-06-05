@@ -8,13 +8,16 @@
 
 using namespace cv;
 using namespace ofxCv;
+using json = nlohmann::json;
 
 class Glow : public RectFollower {
-protected:
+public:
     ofColor color;
     ofVec2f cur, smooth;
     float startedDying;
+    bool recorded;
     ofPolyline all;
+    uint age;
 public:
     Glow()
     :startedDying(0) {
@@ -23,6 +26,11 @@ public:
     void update(const Player& track);
     void kill();
     void draw();
+    void record(std::ofstream& fileStream);
+    void record(std::ofstream& fileStream, bool forceRecord);
+
+protected:
+    void doRecord(std::ofstream& fileStream);
 };
 
 class ofApp : public ofBaseApp {
@@ -63,8 +71,13 @@ public:
     ofParameter<ofColor> team2Color;
     
     ofxButton loadVideo;
+    ofParameter<bool> recordRunthrough;
+    bool forceRecord;
     
     ofxPanel gui;
     
     void loadVideoPressed();
+    void recordRunthroughPressed(bool& recordB);
+    std::ofstream recordingFile;
+    void finalizeRecording();
 };
