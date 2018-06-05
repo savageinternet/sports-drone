@@ -17,26 +17,33 @@
 using namespace cv;
 using namespace ofxCv;
 
-enum SportName { jugger, soccer, rugby };
+enum SportName { jugger=0, soccer=1, quidditch=2 };
 enum PixelSize { fourK, teneightyP, seventwentyP };
 
 class SportVideo {
 public:
-    SportName name;
-    ofVec2f fieldDimsM;
-    PixelSize pixels;
-    float pixelsPerM;
     int expectedPlayerCount;
     std::vector<Player> expectedPlayers;
     
 private:
+    SportName name;
+    PixelSize pixels;
     ofVec2f pixelDims;
+    float pixelsPerM;
+    ofVec2f fieldDimsM;
     
 public:
     SportVideo() :
         name(jugger), fieldDimsM(40,20), pixelDims(seventwentyP), pixelsPerM(50), expectedPlayerCount(10) {}
     
-    SportVideo(SportName name, ofVec2f fieldDimsM, PixelSize pixels, int expectedPlayerCount, std::vector<Player> expectedPlayers);
+    SportVideo(SportName name, PixelSize pixels, int expectedPlayerCount, std::vector<Player> expectedPlayers);
+    
+    void updatePixelSize(PixelSize pixels);
+    void updatePixelSize(ofPixels pixels);
+    void updateSport(SportName sport);
+    void updateExpectedPlayerCount(int expectedPlayerCount) { this->expectedPlayerCount = expectedPlayerCount; }
+    void updateExpectedPlayers(string expectedPlayers);
+    void updateExpectedPlayers(std::vector<Player> expectedPlayers) { this->expectedPlayers = expectedPlayers; }
 };
 
 

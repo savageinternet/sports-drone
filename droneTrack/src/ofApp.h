@@ -4,6 +4,7 @@
 #include "ofxGui.h"
 #include "ofxCv.h"
 #include "playerTracker.hpp"
+#include "sportVideo.hpp"
 
 using namespace cv;
 using namespace ofxCv;
@@ -35,12 +36,16 @@ public:
     Mat colorFrameMat;
     Mat grayFrameMat;
     
-    int blurRadius = 10;
+    ofParameterGroup processingParameters;
+    ofParameter<int> minRadius;
+    ofParameter<int> maxRadius;
+    ofParameter<int> persistence;
+    ofParameter<int> maxVelocity;
+    ofParameter<int> blurRadius;
+    ofParameter<bool> thresholdB;
+    ofParameter<int> thresholdValue;
     
-    bool thresholdB = false;
-    
-    // if we want to threshold, we use this:
-    int thresholdValue = 90;
+    ofxPanel processingGui;
     
     // otherwise, we use background subtraction:
     Mat fgMask;
@@ -49,10 +54,10 @@ public:
     ContourFinder contourFinder;
     RectTrackerFollower<Glow> tracker;
     //PlayerTracker tracker;
+    SportVideo videoDetails;
     
-    ofParameterGroup parameters;
+    ofParameterGroup sportParameters;
     ofParameter<int> numberPlayers;
-    ofParameter<int> videoEnumChooser;
     ofParameter<int> sportEnumChooser;
     ofParameter<ofColor> team1Color;
     ofParameter<ofColor> team2Color;

@@ -66,16 +66,30 @@ void ofApp::setup() {
     tracker.setMaximumDistance(30);
     
     // the GUI bits
-    parameters.setName("Sport Infoz");
-    parameters.add(numberPlayers.set("Num Players:",10,0,22));
-    parameters.add(videoEnumChooser.set("Video Resolution:",0,0,2));
-    parameters.add(sportEnumChooser.set("Sport:",0,0,2));
-    parameters.add(team1Color.set("Team 1 Color",ofColor(127),ofColor(0,0),ofColor(255)));
-    parameters.add(team2Color.set("Team 2 Color",ofColor(127),ofColor(0,0),ofColor(255)));
-    gui.setup(parameters);
+    // parameters of the video processing
+    processingParameters.setName("Processing Parameters");
+    processingParameters.add(minRadius.set("Min radius:",5,0,100));
+    processingParameters.add(maxRadius.set("Max radius:",15,0,100));
+    processingParameters.add(persistence.set("Persistence (frames):",16,0,160));
+    processingParameters.add(maxVelocity.set("Max velocity:",30,0,100));
+    processingParameters.add(blurRadius.set("Blur radius:",10,0,100));
+    processingParameters.add(thresholdB.set("Simple threshold?",false));
+    processingParameters.add(thresholdValue.set("Threshold:",90,0,255));
+    processingGui.setup(processingParameters);
+    processingGui.setPosition(1070,10);
+    
+    // parameters of the sport and video
+    sportParameters.setName("Sport Infoz");
+    sportParameters.add(numberPlayers.set("Num Players:",10,0,22));
+    sportParameters.add(sportEnumChooser.set("Sport:",0,0,2));
+    sportParameters.add(team1Color.set("Team 1 Color",ofColor(127),ofColor(0,0),ofColor(255)));
+    sportParameters.add(team2Color.set("Team 2 Color",ofColor(127),ofColor(0,0),ofColor(255)));
+    gui.setup(sportParameters);
     
     loadVideo.addListener(this, &ofApp::loadVideoPressed);
     gui.add(loadVideo.setup("Load new video"));
+    
+    videoDetails = *new SportVideo();
 }
 
 void ofApp::update() {
@@ -95,8 +109,8 @@ void ofApp::update() {
             contourFinder.findContours(fgMask);
         }
         
-        /* NOTE from VALKYRIE : under construction :3
-         std::vector<Player> foundPlayers;
+        //NOTE from VALKYRIE : under construction :3
+        std::vector<Player> foundPlayers;
         for(unsigned int i = 0; i < contourFinder.getBoundingRects().size(); i++) {
             Player p(contourFinder.getBoundingRects().at(i));
             p.velocity = toOf(contourFinder.getVelocity(i));
@@ -105,9 +119,18 @@ void ofApp::update() {
             //p.jerseyColor = ???
             
             foundPlayers.push_back(p);
-        }*/
-        tracker.track(contourFinder.getBoundingRects());//foundPlayers);
+        }
+        tracker.track(/*foundPlayers);*/contourFinder.getBoundingRects());
     }
+    
+    // now change things the user input
+    contourFinder.setMinAreaRadius(minRadius);
+    contourFinder.setMaxAreaRadius(maxRadius);
+    contourFinder.setThreshold(thresholdValue);
+    tracker.setPersistence(persistence);
+    tracker.setMaximumDistance(maxVelocity);
+    videoDetails.updateExpectedPlayerCount(numberPlayers);
+    videoDetails.updateSport(static_cast<SportName>(sportEnumChooser.get()));
 }
 
 void ofApp::draw() {
@@ -188,6 +211,7 @@ void ofApp::draw() {
     }
     
     // this is all we have to do to draw the GUI???? :D :D :D
+    processingGui.draw();
     gui.draw();
 }
 
@@ -198,5 +222,6 @@ void ofApp::loadVideoPressed() {
         movie.load(path);
         movie.setVolume(0);
         movie.play();
+        videoDetails.updatePixelSize(movie.getPixels());
     }
 }

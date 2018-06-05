@@ -18,6 +18,8 @@ using namespace ofxCv;
 
 class Player : public cv::Rect {
     // note that we don't want to subclass "TrackedObject"; it's a template.
+    // I think we ultimately need to change our glow thingy (in ofApp) to a playertrackerfollower...
+    // and move it in here.
 public:
     ofVec2f velocity;
     ofColor jerseyColor;
