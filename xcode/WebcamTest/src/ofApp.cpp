@@ -1,6 +1,4 @@
 #include "ofApp.h"
-#include "OfxLuminanceSource.hpp"
-#include "ThresholdBinarizer.hpp"
 #include "WebcamTestConstants.h"
 
 using namespace std;
@@ -33,9 +31,6 @@ void ofApp::update(){
             
             // threshold into binary image
             frameGray.adaptiveThreshold(17, 8, false, true);
-            
-            // detect connected components
-            contourFinder.findContours(frameGray, 20, 500, 4, false, true);
         } else {
             skippedFirstFrame = true;
         }
@@ -47,7 +42,6 @@ void ofApp::update(){
 //--------------------------------------------------------------
 void ofApp::draw(){
     frameGray.draw(0, 0);
-    contourFinder.draw(0, 0);
 }
 
 //--------------------------------------------------------------

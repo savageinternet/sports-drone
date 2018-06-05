@@ -5,8 +5,6 @@
 #include "ofMain.h"
 #include "ofxOpenCv.h"
 
-using namespace zxing;
-
 class ofApp : public ofBaseApp{
 public:
     void setup();
@@ -29,5 +27,4 @@ public:
     ofVideoGrabber vidGrabber;
     ofxCvColorImage frame;
     ofxCvGrayscaleImage frameGray;
-    ofxCvContourFinder contourFinder;
 };
