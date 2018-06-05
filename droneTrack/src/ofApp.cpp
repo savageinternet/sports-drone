@@ -68,7 +68,7 @@ void Glow::doRecord(std::ofstream& fileStream) {
     } else {
         j["died"] = false;
     }
-    fileStream << j.dump() << "\n";
+    fileStream << j.dump() << ",\n";
     recorded = true;
 }
 
@@ -282,6 +282,7 @@ void ofApp::recordRunthroughPressed(bool& recordB) {
         movie.setPosition(0.0f);
         tracker = *new RectTrackerFollower<Glow>();
         recordingFile.open ("/Users/valkyrie/projects/savage-internet/sports drone/video/runthrough.txt");
+        recordingFile << "[";
         movie.setLoopState(OF_LOOP_NONE);
     }
 }
@@ -289,7 +290,7 @@ void ofApp::recordRunthroughPressed(bool& recordB) {
 void ofApp::finalizeRecording() {
     json j;
     //j["sport"] = sportVideo.
-    
+    recordingFile << "]";
     movie.setLoopState(OF_LOOP_NORMAL);
     movie.play();
 }
