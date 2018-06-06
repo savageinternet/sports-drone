@@ -16,9 +16,6 @@
 		E4B69E200A3A1BDC003C02F2 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E4B69E1D0A3A1BDC003C02F2 /* main.cpp */; };
 		E4B69E210A3A1BDC003C02F2 /* ofApp.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E4B69E1E0A3A1BDC003C02F2 /* ofApp.cpp */; };
 		E95074EFC591A5D50E97A1C7 /* ofxCvGrayscaleImage.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D71639915759FB05E496E5FF /* ofxCvGrayscaleImage.cpp */; };
-		F634574D20BEF43400C33E96 /* libzxing.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F634574C20BEF43400C33E96 /* libzxing.a */; };
-		F634575120BEF4AB00C33E96 /* OfxLuminanceSource.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F634574F20BEF4AB00C33E96 /* OfxLuminanceSource.cpp */; };
-		F6ABB58020BF08D200189DF3 /* libiconv.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = F6ABB57F20BF08D200189DF3 /* libiconv.tbd */; };
 		FBE5C1BF5F0A1475F0E60CEF /* ofxCvHaarFinder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9118C90C3C1D36672121F5E7 /* ofxCvHaarFinder.cpp */; };
 /* End PBXBuildFile section */
 
@@ -399,8 +396,6 @@
 		F58ED170E198FDC1587F4897 /* allocator.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; name = allocator.h; path = ../../../../../lib/of_v0.10.0_osx_release/addons/ofxOpenCv/libs/opencv/include/opencv2/flann/allocator.h; sourceTree = SOURCE_ROOT; };
 		F634574A20BEED1C00C33E96 /* WebcamTestConstants.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WebcamTestConstants.h; sourceTree = "<group>"; };
 		F634574C20BEF43400C33E96 /* libzxing.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libzxing.a; path = "../../../../../../../usr/local/Cellar/zxing-cpp/2.3.0/lib/libzxing.a"; sourceTree = "<group>"; };
-		F634574F20BEF4AB00C33E96 /* OfxLuminanceSource.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = OfxLuminanceSource.cpp; sourceTree = "<group>"; };
-		F634575020BEF4AB00C33E96 /* OfxLuminanceSource.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = OfxLuminanceSource.hpp; sourceTree = "<group>"; };
 		F6ABB57F20BF08D200189DF3 /* libiconv.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libiconv.tbd; path = usr/lib/libiconv.tbd; sourceTree = SDKROOT; };
 		F87187A95A42413313E32EF4 /* expr.hpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; name = expr.hpp; path = ../../../../../lib/of_v0.10.0_osx_release/addons/ofxOpenCv/libs/opencv/include/opencv2/cudev/expr/expr.hpp; sourceTree = SOURCE_ROOT; };
 		FA3D521D9D6943F712A1621C /* motion_stabilizing.hpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; name = motion_stabilizing.hpp; path = ../../../../../lib/of_v0.10.0_osx_release/addons/ofxOpenCv/libs/opencv/include/opencv2/videostab/motion_stabilizing.hpp; sourceTree = SOURCE_ROOT; };
@@ -415,8 +410,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F6ABB58020BF08D200189DF3 /* libiconv.tbd in Frameworks */,
-				F634574D20BEF43400C33E96 /* libzxing.a in Frameworks */,
 				E4328149138ABC9F0047C5CB /* openFrameworksDebug.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1145,8 +1138,6 @@
 				E4B69E1E0A3A1BDC003C02F2 /* ofApp.cpp */,
 				E4B69E1F0A3A1BDC003C02F2 /* ofApp.h */,
 				F634574A20BEED1C00C33E96 /* WebcamTestConstants.h */,
-				F634574F20BEF4AB00C33E96 /* OfxLuminanceSource.cpp */,
-				F634575020BEF4AB00C33E96 /* OfxLuminanceSource.hpp */,
 			);
 			path = src;
 			sourceTree = SOURCE_ROOT;
@@ -1328,7 +1319,6 @@
 				849EDD98783E08B55646955C /* ofxCvImage.cpp in Sources */,
 				1390902A64E45C0DF9BC6368 /* ofxCvFloatImage.cpp in Sources */,
 				E95074EFC591A5D50E97A1C7 /* ofxCvGrayscaleImage.cpp in Sources */,
-				F634575120BEF4AB00C33E96 /* OfxLuminanceSource.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1503,10 +1493,7 @@
 				ICON_FILE = "$(ICON_FILE_PATH)$(ICON)";
 				INFOPLIST_FILE = "openFrameworks-Info.plist";
 				INSTALL_PATH = /Applications;
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"/usr/local/Cellar/zxing-cpp/2.3.0/lib",
-				);
+				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				OTHER_LDFLAGS = (
 					"$(OF_CORE_FRAMEWORKS)",
 					"$(OF_CORE_LIBS)",
@@ -1766,10 +1753,7 @@
 				ICON_FILE = "$(ICON_FILE_PATH)$(ICON)";
 				INFOPLIST_FILE = "openFrameworks-Info.plist";
 				INSTALL_PATH = /Applications;
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"/usr/local/Cellar/zxing-cpp/2.3.0/lib",
-				);
+				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				OTHER_LDFLAGS = (
 					"$(OF_CORE_FRAMEWORKS)",
 					"$(OF_CORE_LIBS)",
@@ -1849,10 +1833,7 @@
 				ICON_FILE = "$(ICON_FILE_PATH)$(ICON)";
 				INFOPLIST_FILE = "openFrameworks-Info.plist";
 				INSTALL_PATH = /Applications;
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"/usr/local/Cellar/zxing-cpp/2.3.0/lib",
-				);
+				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				OTHER_LDFLAGS = (
 					"$(OF_CORE_FRAMEWORKS)",
 					"$(OF_CORE_LIBS)",

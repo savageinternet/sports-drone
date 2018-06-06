@@ -1,17 +1,7 @@
-#include <zxing/datamatrix/DataMatrixReader.h>
-#include <zxing/common/Counted.h>
-#include <zxing/common/GlobalHistogramBinarizer.h>
-#include <zxing/Exception.h>
-
 #include "ofApp.h"
-#include "OfxLuminanceSource.hpp"
 #include "WebcamTestConstants.h"
 
 using namespace std;
-using namespace zxing;
-using namespace zxing::datamatrix;
-
-const string ofApp::MSG_NO_CODE_DETECTED = "No code detected";
 
 //--------------------------------------------------------------
 void ofApp::setup(){
@@ -20,13 +10,11 @@ void ofApp::setup(){
     vidGrabber.initGrabber(WebcamTestConstants::CAMERA_WIDTH,
                            WebcamTestConstants::CAMERA_HEIGHT);
     
+    skippedFirstFrame = false;
     frame.allocate(WebcamTestConstants::CAMERA_WIDTH,
                    WebcamTestConstants::CAMERA_HEIGHT);
     frameGray.allocate(WebcamTestConstants::CAMERA_WIDTH,
                        WebcamTestConstants::CAMERA_HEIGHT);
-    reader = new DataMatrixReader();
-    result = NULL;
-    resultText = MSG_NO_CODE_DETECTED;
 }
 
 //--------------------------------------------------------------
@@ -34,32 +22,26 @@ void ofApp::update(){
     ofBackground(0, 0, 0);
     vidGrabber.update();
     if (vidGrabber.isFrameNew()) {
-        frame.setFromPixels(vidGrabber.getPixels());
-        frameGray = frame;
-        
-        // detect Aztec code
-        Ref<OfxLuminanceSource> source(new OfxLuminanceSource(frameGray));
-        Ref<Binarizer> binarizer(new GlobalHistogramBinarizer(source));
-        Ref<BinaryBitmap> image(new BinaryBitmap(binarizer));
-        try {
-            result = reader->decode(image, DecodeHints::DATA_MATRIX_HINT);
-            if (result.empty()) {
-                resultText = MSG_NO_CODE_DETECTED;
-            } else {
-                resultText = result->getText()->getText();
-            }
-        } catch (const zxing::Exception& e) {
-            resultText = e.what();
-            result = NULL;
+        if (skippedFirstFrame) {
+            // get video frame
+            frame.setFromPixels(vidGrabber.getPixels());
+            
+            // convert to grayscale
+            frameGray = frame;
+            
+            // threshold into binary image
+            frameGray.adaptiveThreshold(17, 8, false, true);
+        } else {
+            skippedFirstFrame = true;
         }
     }
 }
 
+
+
 //--------------------------------------------------------------
 void ofApp::draw(){
-    ofSetHexColor(0xffffff);
-    frame.draw(0, 0);
-    ofDrawBitmapString(resultText, 20, 20);
+    frameGray.draw(0, 0);
 }
 
 //--------------------------------------------------------------

@@ -2,19 +2,10 @@
 
 #include <string>
 
-#include <zxing/datamatrix/DataMatrixReader.h>
-#include <zxing/common/Counted.h>
-
 #include "ofMain.h"
 #include "ofxOpenCv.h"
 
-using namespace zxing;
-using namespace zxing::datamatrix;
-
 class ofApp : public ofBaseApp{
-private:
-    static const string MSG_NO_CODE_DETECTED;
-
 public:
     void setup();
     void update();
@@ -31,11 +22,9 @@ public:
     void windowResized(int w, int h);
     void dragEvent(ofDragInfo dragInfo);
     void gotMessage(ofMessage msg);
-		
+    
+    bool skippedFirstFrame;
     ofVideoGrabber vidGrabber;
     ofxCvColorImage frame;
     ofxCvGrayscaleImage frameGray;
-    Ref<DataMatrixReader> reader;
-    Ref<Result> result;
-    string resultText;
 };
