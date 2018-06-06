@@ -24,7 +24,15 @@ void Glow::kill() {
         startedDying = curTime;
     } else if(curTime - startedDying > dyingTime) {
         dead = true;
+        // if it dies, we want to record!
+        // but... this will get taken care of by another call
     }
+}
+
+void Glow::updateDiedFrame(int diedFrame) {
+    if (startedDying == 0) {
+        this->diedFrame = diedFrame;
+    } else {} // do nothing if it already stared dying.
 }
 
 void Glow::draw() {
@@ -62,12 +70,13 @@ void Glow::doRecord(std::ofstream& fileStream) {
     for (int i = 0; i < all.getVertices().size(); i++) {
         j["path"].push_back({all.getVertices().at(i).x, all.getVertices().at(i).y});
     }
-    j["born"] = ofGetElapsedTimef() - age;
-    if(dead) {
-        j["died"] = startedDying;
+    j["born"] = bornFrame;
+    if(dead || startedDying) {
+        j["died"] = diedFrame;
     } else {
         j["died"] = false;
     }
+    // TODO: also include the largest size of the blob that was tracked here? would be helpful for filtering?
     fileStream << j.dump() << ",\n";
     recorded = true;
 }
@@ -123,6 +132,8 @@ void ofApp::setup() {
     gui.add(loadVideo.setup("Load new video"));
     
     videoDetails = *new SportVideo();
+    
+    curFrame = 0;
 }
 
 void ofApp::update() {
@@ -205,6 +216,7 @@ void ofApp::draw() {
     vector<Glow>& followers = tracker.getFollowers();
     for(int i = 0; i < followers.size(); i++) {
         followers[i].draw();
+        followers[i].updateDiedFrame(curFrame);
         if (recordRunthrough) followers[i].record(recordingFile, forceRecord);
     }
     
@@ -223,8 +235,7 @@ void ofApp::draw() {
         ofTranslate(center.x, center.y);
         int label = contourFinder.getLabel(i);
         uint age = tracker.getAge(label);
-        followers[i].age = age;
-        if (age > 32) { // if it has lived for at least 1s, draw it.
+        if (age > 32) { // if it has lived for at least 1s, draw it. (I don't actually know what age is...)
             string msg = ofToString(label) + ":" + ofToString(age);
             ofDrawBitmapString(msg, 0, 0);
             ofVec2f velocity = toOf(contourFinder.getVelocity(i));
@@ -253,6 +264,14 @@ void ofApp::draw() {
     for(int i = 0; i < newLabels.size(); i++) {
         int j = newLabels[i];
         ofDrawLine(j, 8, j, 12);
+        // we also need to send the current timestamp to these.
+        // ... which sadly means we have to iterate over all living followers to find the one with a matching label :(
+        for(int i = 0; i < followers.size(); i++) {
+            if (followers[i].getLabel() == j) { // j is the label
+                followers[i].bornFrame = curFrame;
+                break;
+            }
+        }
     }
     ofSetColor(ofColor::white);
     for(int i = 0; i < deadLabels.size(); i++) {
@@ -263,6 +282,8 @@ void ofApp::draw() {
     // this is all we have to do to draw the GUI???? :D :D :D
     processingGui.draw();
     gui.draw();
+    
+    curFrame++;
 }
 
 void ofApp::loadVideoPressed() {
@@ -273,6 +294,7 @@ void ofApp::loadVideoPressed() {
         movie.setVolume(0);
         movie.play();
         videoDetails.updatePixelSize(movie.getPixels());
+        curFrame = 0;
     }
 }
 
@@ -281,9 +303,10 @@ void ofApp::recordRunthroughPressed(bool& recordB) {
     if (recordB) {
         movie.setPosition(0.0f);
         tracker = *new RectTrackerFollower<Glow>();
-        recordingFile.open ("/Users/valkyrie/projects/savage-internet/sports drone/video/runthrough.txt");
+        recordingFile.open("/Users/valkyrie/projects/savage-internet/sports drone/video/runthrough.txt" , std::ofstream::out | std::ofstream::trunc); // delete everything that's there.
         recordingFile << "[";
         movie.setLoopState(OF_LOOP_NONE);
+        curFrame = 0;
     }
 }
 

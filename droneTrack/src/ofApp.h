@@ -17,7 +17,8 @@ public:
     float startedDying;
     bool recorded;
     ofPolyline all;
-    uint age;
+    int bornFrame;
+    int diedFrame;
 public:
     Glow()
     :startedDying(0) {
@@ -25,6 +26,7 @@ public:
     void setup(const Player& track);
     void update(const Player& track);
     void kill();
+    void updateDiedFrame(int diedFrame);
     void draw();
     void record(std::ofstream& fileStream);
     void record(std::ofstream& fileStream, bool forceRecord);
@@ -80,4 +82,6 @@ public:
     void recordRunthroughPressed(bool& recordB);
     std::ofstream recordingFile;
     void finalizeRecording();
+    
+    int curFrame;
 };
