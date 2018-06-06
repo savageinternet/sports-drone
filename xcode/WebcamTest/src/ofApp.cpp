@@ -1,36 +1,38 @@
 #include "ofApp.h"
+#include "ofxCv.h"
+
 #include "WebcamTestConstants.h"
 
+using namespace cv;
+using namespace ofxCv;
 using namespace std;
 
 //--------------------------------------------------------------
 void ofApp::setup(){
-    vidGrabber.setDeviceID(0);
-    vidGrabber.setDesiredFrameRate(WebcamTestConstants::CAMERA_FPS);
-    vidGrabber.initGrabber(WebcamTestConstants::CAMERA_WIDTH,
-                           WebcamTestConstants::CAMERA_HEIGHT);
+    cam.setDeviceID(0);
+    cam.setDesiredFrameRate(WebcamTestConstants::CAMERA_FPS);
+    cam.initGrabber(WebcamTestConstants::CAMERA_WIDTH,
+                    WebcamTestConstants::CAMERA_HEIGHT);
     
     skippedFirstFrame = false;
     frame.allocate(WebcamTestConstants::CAMERA_WIDTH,
-                   WebcamTestConstants::CAMERA_HEIGHT);
-    frameGray.allocate(WebcamTestConstants::CAMERA_WIDTH,
-                       WebcamTestConstants::CAMERA_HEIGHT);
+                   WebcamTestConstants::CAMERA_HEIGHT,
+                   OF_IMAGE_GRAYSCALE);
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
     ofBackground(0, 0, 0);
-    vidGrabber.update();
-    if (vidGrabber.isFrameNew()) {
+    cam.update();
+    if (cam.isFrameNew()) {
         if (skippedFirstFrame) {
-            // get video frame
-            frame.setFromPixels(vidGrabber.getPixels());
-            
-            // convert to grayscale
-            frameGray = frame;
+            // get video frame and convert to grayscale
+            convertColor(cam, frame, CV_RGB2GRAY);
             
             // threshold into binary image
-            frameGray.adaptiveThreshold(17, 8, false, true);
+            Mat frameMat = toCv(frame);
+            adaptiveThreshold(frameMat, frameMat, 255, ADAPTIVE_THRESH_GAUSSIAN_C, THRESH_BINARY, 13, 8);
+            frame.update();
         } else {
             skippedFirstFrame = true;
         }
@@ -41,7 +43,7 @@ void ofApp::update(){
 
 //--------------------------------------------------------------
 void ofApp::draw(){
-    frameGray.draw(0, 0);
+    frame.draw(0, 0);
 }
 
 //--------------------------------------------------------------

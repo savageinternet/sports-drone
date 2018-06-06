@@ -1,9 +1,10 @@
 #pragma once
 
-#include <string>
-
 #include "ofMain.h"
-#include "ofxOpenCv.h"
+#include "ofxCv.h"
+
+using namespace cv;
+using namespace ofxCv;
 
 class ofApp : public ofBaseApp{
 public:
@@ -24,7 +25,6 @@ public:
     void gotMessage(ofMessage msg);
     
     bool skippedFirstFrame;
-    ofVideoGrabber vidGrabber;
-    ofxCvColorImage frame;
-    ofxCvGrayscaleImage frameGray;
+    ofVideoGrabber cam;
+    ofImage frame;
 };
