@@ -44,6 +44,8 @@ public:
     void updateExpectedPlayerCount(int expectedPlayerCount) { this->expectedPlayerCount = expectedPlayerCount; }
     void updateExpectedPlayers(string expectedPlayers);
     void updateExpectedPlayers(std::vector<Player> expectedPlayers) { this->expectedPlayers = expectedPlayers; }
+    
+    std::string getNameString();
 };
 
 

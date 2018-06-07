@@ -88,3 +88,15 @@ void SportVideo::updateSport(SportName sport) {
 void SportVideo::updateExpectedPlayers(string expectedPlayers) {
     // TODO do some parsing magic here :D
 }
+
+std::string SportVideo::getNameString() {
+    switch(this->name) {
+        case soccer:
+            return "soccer";
+        case quidditch:
+            return "quidditch";
+        case jugger:
+        default:
+            return "jugger";
+    }
+}

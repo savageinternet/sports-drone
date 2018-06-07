@@ -1,11 +1,14 @@
 #pragma once
 
+#include <algorithm>
+
 #include "ofMain.h"
 #include "ofxGui.h"
 #include "ofxCv.h"
 #include "playerTracker.hpp"
 #include "sportVideo.hpp"
 
+using namespace std;
 using namespace cv;
 using namespace ofxCv;
 using json = nlohmann::json;
@@ -43,7 +46,13 @@ public:
     
     ofVideoPlayer movie;
     ofImage colorFrame;
+    ofImage colorFrameBlurred;
     Mat colorFrameMat;
+    Mat colorFrameBlurredMat;
+    Mat hsvColorFrameMat;
+    Mat grassMat;
+    Mat team1ColorFilterMat;
+    Mat team2ColorFilterMat;
     Mat grayFrameMat;
     
     ofParameterGroup processingParameters;
@@ -54,6 +63,21 @@ public:
     ofParameter<int> blurRadius;
     ofParameter<bool> thresholdB;
     ofParameter<int> thresholdValue;
+    ofParameter<int> hRange;
+    ofParameter<int> sRange;
+    ofParameter<int> bRange;
+    ofParameter<bool> useTeamColorSubtractB;
+    
+    ofParameterGroup displayParameters;
+    ofParameter<bool> showOriginal;
+    ofParameter<bool> showGrayscale;
+    ofParameter<bool> showColor;
+    ofParameter<bool> showT1Filter;
+    ofParameter<bool> showT2Filter;
+    // this is a little separate...
+    ofParameter<bool> showContourFinder;
+    
+    void showVideoPressed(ofAbstractParameter &pressed);
     
     ofxPanel processingGui;
     
@@ -82,6 +106,11 @@ public:
     void recordRunthroughPressed(bool& recordB);
     std::ofstream recordingFile;
     void finalizeRecording();
+    
+    void blurAndGrayscaleVideo();
+    void filterColorToMask(ofColor teamColor, cv::Mat& colorFilterMat);
+    int ofColortoCVHue(int hue);
+    void clampHSB(int& hue, int& saturation, int& brightness);
     
     int curFrame;
 };
