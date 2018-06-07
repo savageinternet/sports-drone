@@ -5,15 +5,26 @@
 //  Created by Evan Savage on 2018-06-07.
 //
 
+#include <bitset>
+
 #include "catch.hpp"
 
-unsigned int Factorial( unsigned int number ) {
-    return number <= 1 ? number : Factorial(number-1)*number;
-}
+#include "ShoulderCodec.hpp"
 
-TEST_CASE( "Factorials are computed", "[factorial]" ) {
-    REQUIRE( Factorial(1) == 1 );
-    REQUIRE( Factorial(2) == 2 );
-    REQUIRE( Factorial(3) == 6 );
-    REQUIRE( Factorial(10) == 3628800 );
+using namespace std;
+
+TEST_CASE("ShoulderCodecTest", "[ShoulderCodecTest]" ) {
+    GIVEN("A ShoulderCodec instance and bitset of size 16") {
+        ShoulderCodec codec;
+        bitset<16> code;
+        
+        WHEN("we encode each valid number into the bitset, then decode") {
+            THEN("we get the same number back back") {
+                for (int i = 0; i < 64; i++) {
+                    codec.encode(i, code);
+                    REQUIRE(codec.decode(code) == i);
+                }
+            }
+        }
+    }
 }
