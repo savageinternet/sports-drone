@@ -8,9 +8,12 @@
 #ifndef ShoulderCodec_hpp
 #define ShoulderCodec_hpp
 
+#include <iostream>
+
 #include "ofxCv.h"
 
 using namespace cv;
+using namespace std;
 
 class ShoulderCodec {
 private:
