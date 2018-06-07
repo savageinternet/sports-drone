@@ -98,7 +98,7 @@ int ShoulderCodec::decode(bitset<16>& code) const {
     if (sR != 0) {
         if (sR < 8) {
             return -1;
-        } else if (sL == 8) {
+        } else if (sR == 8) {
             code.flip(15);
         } else {
             code.flip(sR - 1);
