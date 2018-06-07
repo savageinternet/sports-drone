@@ -10,6 +10,7 @@
 
 #include <bitset>
 #include <iostream>
+#include <string>
 
 using namespace std;
 
@@ -23,6 +24,7 @@ public:
     
     void encode(int n, bitset<16>& code) const;
     int decode(bitset<16>& code) const;
+    ostream& print(ostream& os, const bitset<16>& code) const;
 };
 
 #endif /* ShoulderCodec_hpp */
