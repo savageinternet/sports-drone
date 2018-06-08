@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <random>
 
 #include "ofMain.h"
 #include "ofxGui.h"
@@ -13,13 +14,22 @@ using namespace cv;
 using namespace ofxCv;
 using json = nlohmann::json;
 
-class Glow : public RectFollower {
+struct timepoint {
+    float x=0.0, y=0.0;
+    int timeStamp=0;
+};
+
+template <class F> class PlayerTrackerFollower : public TrackerFollower<Player, F> {};
+class PlayerFollower : public RectFollower {};
+
+class Glow : public PlayerFollower {
 public:
     ofColor color;
     ofVec2f cur, smooth;
     float startedDying;
     bool recorded;
     ofPolyline all;
+    vector<timepoint> timestampPositions;
     int bornFrame;
     int diedFrame;
 public:
@@ -50,6 +60,7 @@ public:
     Mat colorFrameMat;
     Mat colorFrameBlurredMat;
     Mat hsvColorFrameMat;
+    ofImage hsvColorFrame;
     Mat grassMat;
     Mat team1ColorFilterMat;
     Mat team2ColorFilterMat;
@@ -86,8 +97,7 @@ public:
     Ptr<BackgroundSubtractor> bgsub; //MOG2 Background subtractor
     
     ContourFinder contourFinder;
-    RectTrackerFollower<Glow> tracker;
-    //PlayerTracker tracker;
+    PlayerTrackerFollower<Glow> tracker;
     SportVideo videoDetails;
     
     ofParameterGroup sportParameters;
@@ -112,5 +122,5 @@ public:
     int ofColortoCVHue(int hue);
     void clampHSB(int& hue, int& saturation, int& brightness);
     
-    int curFrame;
+    std::default_random_engine rng;
 };

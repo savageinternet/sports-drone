@@ -2,20 +2,29 @@
 
 using namespace ofxCv;
 using namespace cv;
+using namespace std;
 
 const float dyingTime = 1;
 
+int curFrame = 0;
+
 void Glow::setup(const Player& track) {
-    color.setHsb(ofRandom(0, 255), 255, 255);
-    cur = toOf(track).getCenter();
+    color.setHsb(track.jerseyColor.getHue(), 255, 255);
+    cur = toOf(track.rect).getCenter();
     smooth = cur;
     recorded = false;
 }
 
 void Glow::update(const Player& track) {
-    cur = toOf(track).getCenter();
+    cur = toOf(track.rect).getCenter();
     smooth.interpolate(cur, .5);
     all.addVertex(cur.x, cur.y);
+    
+    timepoint now;
+    now.x = cur.x;
+    now.y = cur.y;
+    now.timeStamp = curFrame;
+    timestampPositions.push_back(now);
 }
 
 void Glow::kill() {
@@ -67,8 +76,13 @@ void Glow::doRecord(std::ofstream& fileStream) {
     json j;
     j["label"] = label;
     j["path"] = {};
-    for (int i = 0; i < all.getVertices().size(); i++) {
-        j["path"].push_back({all.getVertices().at(i).x, all.getVertices().at(i).y});
+    for (int i = 0; i < timestampPositions.size(); i++) {
+        timepoint tp = timestampPositions.at(i);
+        json pt;
+        pt["x"] = tp.x;
+        pt["y"] = tp.y;
+        pt["time"] = tp.timeStamp;
+        j["path"].push_back(pt);
     }
     j["born"] = bornFrame;
     if(dead || startedDying) {
@@ -86,6 +100,7 @@ void ofApp::setup() {
     ofBackground(0);
     
     movie.load("/Users/valkyrie/projects/savage-internet/sports drone/video/soccer-cut.mp4");
+    //movie.load("/Users/valkyrie/projects/savage-internet/sports drone/video/slowcolors.mp4");
     movie.setVolume(0);
     movie.play();
     
@@ -109,7 +124,7 @@ void ofApp::setup() {
     processingParameters.add(minRadius.set("Min radius:",7,0,100));
     processingParameters.add(maxRadius.set("Max radius:",15,0,100));
     processingParameters.add(persistence.set("Persistence (frames):",54,0,160));
-    processingParameters.add(maxVelocity.set("Max velocity:",15,0,100));
+    processingParameters.add(maxVelocity.set("Max distance:",30,0,500));
     processingParameters.add(blurRadius.set("Blur radius:",12,0,100));
     processingParameters.add(thresholdB.set("Simple threshold?",false));
     processingParameters.add(thresholdValue.set("Threshold:",90,0,255));
@@ -213,17 +228,44 @@ void ofApp::update() {
         }
         
         //NOTE from VALKYRIE : under construction :3
+        // this section basically takes the rectangles from the contourfinder and turns them into "players", where we can have mo' info.
         std::vector<Player> foundPlayers;
+        int w = colorFrameBlurred.getWidth();
+        int h = colorFrameBlurred.getHeight();
+        int type = colorFrameBlurred.getImageType();
+        ofPixels pixels = colorFrameBlurred.getPixels();
+        unsigned long bpp = pixels.getBytesPerPixel() / 8;
+
         for(unsigned int i = 0; i < contourFinder.getBoundingRects().size(); i++) {
-            Player p(contourFinder.getBoundingRects().at(i));
+            Player p;
+            p.rect = contourFinder.getBoundingRects().at(i);
             p.velocity = toOf(contourFinder.getVelocity(i));
             
             // extract the average pixel color from around the centroid? need to think about exactly what to do here. be sure to use the blurred video, I guess, since it will de-noise shit?
-            //p.jerseyColor = ???
+            // select a few random points within the rectangle and record their hsv color values
+            ofColor avgHSB(0,0,0);
+            std::normal_distribution<float> distx(p.rect.x + (p.rect.width/2.0),p.rect.width/4.0);
+            std::normal_distribution<float> disty(p.rect.y + (p.rect.height/2.0),p.rect.height/4.0);
+            int numToAvg = 10;
+            for (int i = 0; i < numToAvg; i++) {
+                ofPoint pt;
+                p.rect.x = distx(rng);
+                p.rect.y = disty(rng);
+                
+                float cRed = pixels[(p.rect.y*w+p.rect.x)*bpp+0];
+                float cGreen = pixels[(p.rect.y*w+p.rect.x)*bpp+1];
+                float cBlue = pixels[(p.rect.y*w+p.rect.x)*bpp+2];
+                ofColor here(cRed, cGreen, cBlue);
+                avgHSB.setHue(avgHSB.getHue() + here.getHue()/numToAvg);
+                avgHSB.setSaturation(avgHSB.getSaturation() + here.getSaturation()/numToAvg);
+                avgHSB.setBrightness(avgHSB.getBrightness() + here.getBrightness()/numToAvg);
+            }
+            // now that we have an average color... we should.. um... check if it matches one of the team colors chosen? or not care?
+            p.jerseyColor = avgHSB;
             
             foundPlayers.push_back(p);
         }
-        tracker.track(/*foundPlayers);*/contourFinder.getBoundingRects());
+        tracker.track(foundPlayers);//*/contourFinder.getBoundingRects());
     }
 }
 
@@ -297,30 +339,6 @@ void ofApp::draw() {
         drawMat(team1ColorFilterMat,0,0);
     if (showT2Filter)
         drawMat(team2ColorFilterMat,0,0);
-
-    
-    if (grayFrameMat.dims > 0) { // don't run it before we've assigned some data here
-        
-        // this next part comes from https://stackoverflow.com/questions/35886307/how-to-make-white-part-of-the-image-transparent-by-using-android-opencv
-        
-        /* make the thresholded image with transparency...!
-        // Splitting & adding Alpha
-        vector<Mat> channels;   // C++ version of ArrayList<Mat>
-        split(grayFrameMat, channels);   // Automatically splits channels and adds them to channels. The size of channels = 3
-        
-        Mat alpha;
-        channels[0].copyTo(alpha);
-        
-        channels.push_back(alpha);   // Adds mask(alpha) channel. The size of channels = 4 (we use one of the channels again, since we're thresholding to white, anyway)
-        
-        // Merging
-        Mat dst;
-        merge(channels, dst);   // dst is created with 4-channel(BGRA).
-        // Note that OpenCV applies BGRA by default if your array size is 4,
-        // even if actual order is different. In this case this makes sense.
-        
-         drawMat(dst, 0, 0);*/ // for some reason... can't get this to work. :( want black to show up as alpha'd, but it doesn't seem to like me for some reason.
-    }
     
     if (showContourFinder) {
         // draw the rest of the stuff
@@ -415,7 +433,7 @@ void ofApp::loadVideoPressed() {
 void ofApp::recordRunthroughPressed(bool& recordB) {
     if (recordB) {
         movie.setPosition(0.0f);
-        tracker = *new RectTrackerFollower<Glow>();
+        tracker = *new PlayerTrackerFollower<Glow>();
         recordingFile.open("/Users/valkyrie/projects/savage-internet/sports drone/video/runthrough.txt" , std::ofstream::out | std::ofstream::trunc); // delete everything that's there.
         json j;
         j["width"] = movie.getWidth();
