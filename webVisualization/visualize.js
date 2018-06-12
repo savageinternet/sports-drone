@@ -76,9 +76,9 @@ function doDrawing(data) {
       return line(labelled.path);
     })
     .attr('fill', "none") // don't fill it, that's fucking annoying
-    .attr("stroke", function() {
-        return "hsl(" + Math.random() * 360 + ",100%,50%)";
-    }) // make it a random color
+    .attr("stroke", function(labelled) {
+        return "rgb(" + labelled.color.r + "," + labelled.color.g + "," + labelled.color.b + ")";
+    }) // pull out the color we got before
     ;
 
   // draw a label at the end of each labelled thingy's line
