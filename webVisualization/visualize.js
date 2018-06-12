@@ -180,9 +180,9 @@ function filterShortLife(data) {
     var lifeLength = data[i].died - data[i].born;
     if (lifeLength <= shortLife) {
       remove.push(i);
-      console.log(i + ":life X " + data[i].label + "\t" + lifeLength);
+      console.log(i + "(" + data[i].label + "):life X\t" + lifeLength);
     } else {
-      console.log(i + ":life \t\t\t\t\tO " + data[i].label + "\t" + lifeLength);
+      console.log(i + "(" + data[i].label + "):life \t\t\t\t\tO\t" + lifeLength);
     }
   }
   console.log("removing these after short life filtering: " + remove);
@@ -200,10 +200,10 @@ function filterSmallMotion(data) {
   for(var i=0; i < data.length; i++) {
     var lengthOfLine = lineLength(data[i].path);
     if (lengthOfLine < sensibleLength) {
-      console.log(i + ":length X " + data[i].label + "\t" + lengthOfLine);
+      console.log(i + "(" + data[i].label + "):length X\t" + lengthOfLine);
       remove.push(i);
     } else {
-      console.log(i + ":length\t\t\t\t\tO " + data[i].label + "\t" + lengthOfLine);
+      console.log(i + "(" + data[i].label + "):length\t\t\t\t\tO\t" + lengthOfLine);
     }
   }
   console.log("removing these after short travel filtering: " + remove);
