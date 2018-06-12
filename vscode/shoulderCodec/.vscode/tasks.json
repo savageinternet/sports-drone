@@ -1,0 +1,73 @@
+{
+    "version": "2.0.0",
+    "shell":{
+        "task": true
+    },
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "build library",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "command": "make",
+            "args": [
+                "Library"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "type": "shell",
+            "label": "build test",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "command": "make",
+            "args": [
+                "Test"
+            ],
+            "group": "test"
+        },
+        {
+            "type": "shell",
+            "label": "clean library",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "command": "make",
+            "args": [
+                "CleanLibrary"
+            ]
+        },
+        {
+            "type": "shell",
+            "label": "clean test",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "command": "make",
+            "args": [
+                "CleanTest"
+            ]
+        },
+        {
+            "type": "shell",
+            "label": "clean",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "command": "make",
+            "args": [
+                "clean"
+            ]
+        }
+    ]
+}
