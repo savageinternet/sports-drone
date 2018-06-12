@@ -88,11 +88,7 @@ void Glow::doRecord(std::ofstream& fileStream) {
         j["path"].push_back(pt);
     }
     j["born"] = bornFrame;
-    if(dead || startedDying) {
-        j["died"] = diedFrame;
-    } else {
-        j["died"] = false;
-    }
+    j["died"] = diedFrame;
     // TODO: also include the largest size of the blob that was tracked here? would be helpful for filtering?
     fileStream << j.dump() << ",\n";
     recorded = true;
@@ -110,16 +106,14 @@ void ofApp::setup() {
     //create Background Subtractor object
     bgsub = createBackgroundSubtractorMOG2(); //MOG2 or KNN (? can't get MOG or GMG?)
     
-    // from docs:
-    /*the contour finder will automatically convert and threshold your image for you.
-        by default, it finds bright regions. to find dark regions call setInvert(true).
-        to track a color, call setTargetColor(). by default, it tracks in RGB space.
-        to track in HSV or just hue space, pass TRACK_COLOR_HSV or TRACK_COLOR_H.
-        to change the threshold value, use setThreshold(). by default, the threshold is
-        128. when finding bright regions, 128 is halfway between white and black. when
-        tracking a color, 0 means "exactly similar" and 255 is "all colors".*/
-    //contourFinder.setThreshold(15);
-    // TODO : perhaps could make 2 contour finders (one for team 1 and one for team 2) and track by color? rn we just threshold.
+    contourFinder.setMinAreaRadius(5);
+    contourFinder.setMaxAreaRadius(15);
+    contourFinder.setThreshold(15);
+    
+    // wait half a second (at 32fps) before forgetting something
+    tracker.setPersistence(16);
+    // an object can move up to 30 pixels per frame
+    tracker.setMaximumDistance(30);
     
     // the GUI bits
     // parameters of the video processing
@@ -174,7 +168,7 @@ void ofApp::setup() {
     gui.setup(sportParameters);
     
     loadVideo.addListener(this, &ofApp::loadVideoPressed);
-    recordRunthrough.enableEvents(); // the way to add an event to a boolean
+    recordRunthrough.enableEvents(); // can we add an event to a boolean?
     recordRunthrough.addListener(this, &ofApp::recordRunthroughPressed);
     forceRecord = false;
     gui.add(loadVideo.setup("Load new video"));
@@ -228,26 +222,12 @@ void ofApp::update() {
     Player::brightness_weight = brightness_weight;
     Player::numbers_weight = number_weight;
     
-    vector<Glow>& followers = tracker.getFollowers();
-    for(int i = 0; i < followers.size(); i++) {
-        followers[i].updateDiedFrame(curFrame);
-        if (recordRunthrough) followers[i].record(recordingFile, forceRecord);
-    }
-    
     // stop recording when we get to the end
     if(recordRunthrough && movie.getIsMovieDone()) {
         recordRunthrough = false;
         forceRecord = true;
-        
-        for(int i = 0; i < followers.size(); i++) {
-            followers[i].record(recordingFile, forceRecord);
-        }
-        
-        forceRecord = false;
-        finalizeRecording();
-        recordingFile.close();
     }
-
+    
     if(movie.isFrameNew()) {
         blurAndGrayscaleVideo();
         filterColorToMask(team1Color.get(), team1ColorFilterMat);
@@ -305,9 +285,8 @@ void ofApp::update() {
             
             foundPlayers.push_back(p);
         }
+        std::cout << "players: ";
         tracker.track(foundPlayers);
-        
-        curFrame++;
     }
 }
 
@@ -370,7 +349,7 @@ void ofApp::clampHSB(int& hue, int& saturation, int& brightness) {
 void ofApp::draw() {
     ofSetColor(255);
     
-    // now we can jes draw the right thangz
+    // now we can jes draw the right thang
     if (showOriginal)
         movie.draw(0,0);
     if (showColor)
@@ -389,6 +368,16 @@ void ofApp::draw() {
         vector<Glow>& followers = tracker.getFollowers();
         for(int i = 0; i < followers.size(); i++) {
             followers[i].draw();
+            followers[i].updateDiedFrame(curFrame);
+            if (recordRunthrough) followers[i].record(recordingFile, forceRecord);
+        }
+        
+        // once we've finished the video, we want to force everything to record into the file. after that, clear
+        // our memories of EVERYTHING woooOOOOOooOOOoooooOooo...
+        if(forceRecord) {
+            forceRecord = false;
+            finalizeRecording();
+            recordingFile.close();
         }
         
         // visualize labels. from https://github.com/kylemcdonald/ofxCv/blob/master/example-contours-tracking/src/ofApp.cpp
@@ -446,6 +435,8 @@ void ofApp::draw() {
     // this is all we have to do to draw the GUI???? :D :D :D
     processingGui.draw();
     gui.draw();
+    
+    curFrame++;
 }
 
 void ofApp::loadVideoPressed() {
