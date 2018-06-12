@@ -1,22 +1,35 @@
 #pragma once
 
+#include <algorithm>
+#include <random>
+
 #include "ofMain.h"
 #include "ofxGui.h"
 #include "ofxCv.h"
 #include "playerTracker.hpp"
 #include "sportVideo.hpp"
 
+using namespace std;
 using namespace cv;
 using namespace ofxCv;
 using json = nlohmann::json;
 
-class Glow : public RectFollower {
+struct timepoint {
+    float x=0.0, y=0.0;
+    int timeStamp=0;
+};
+
+template <class F> class PlayerTrackerFollower : public TrackerFollower<Player, F> {};
+class PlayerFollower : public RectFollower {};
+
+class Glow : public PlayerFollower {
 public:
     ofColor color;
     ofVec2f cur, smooth;
     float startedDying;
     bool recorded;
     ofPolyline all;
+    vector<timepoint> timestampPositions;
     int bornFrame;
     int diedFrame;
 public:
@@ -43,7 +56,14 @@ public:
     
     ofVideoPlayer movie;
     ofImage colorFrame;
+    ofImage colorFrameBlurred;
     Mat colorFrameMat;
+    Mat colorFrameBlurredMat;
+    Mat hsvColorFrameMat;
+    ofImage hsvColorFrame;
+    Mat grassMat;
+    Mat team1ColorFilterMat;
+    Mat team2ColorFilterMat;
     Mat grayFrameMat;
     
     ofParameterGroup processingParameters;
@@ -54,6 +74,31 @@ public:
     ofParameter<int> blurRadius;
     ofParameter<bool> thresholdB;
     ofParameter<int> thresholdValue;
+    ofParameter<int> hRange;
+    ofParameter<int> sRange;
+    ofParameter<int> bRange;
+    ofParameter<bool> useTeamColorSubtractB;
+    
+    ofParameterGroup displayParameters;
+    ofParameter<bool> showOriginal;
+    ofParameter<bool> showGrayscale;
+    ofParameter<bool> showColor;
+    ofParameter<bool> showT1Filter;
+    ofParameter<bool> showT2Filter;
+    // this is a little separate...
+    ofParameter<bool> showContourFinder;
+    
+    ofParameterGroup matchingParameters;
+    ofParameter<float> loc_weight;
+    ofParameter<float> velocity_weight;
+    ofParameter<float> color_weight;
+    ofParameter<float> size_weight;
+    ofParameter<float> hue_weight;
+    ofParameter<float> saturation_weight;
+    ofParameter<float> brightness_weight;
+    ofParameter<float> number_weight;
+    
+    void showVideoPressed(ofAbstractParameter &pressed);
     
     ofxPanel processingGui;
     
@@ -62,8 +107,7 @@ public:
     Ptr<BackgroundSubtractor> bgsub; //MOG2 Background subtractor
     
     ContourFinder contourFinder;
-    RectTrackerFollower<Glow> tracker;
-    //PlayerTracker tracker;
+    PlayerTrackerFollower<Glow> tracker;
     SportVideo videoDetails;
     
     ofParameterGroup sportParameters;
@@ -83,5 +127,10 @@ public:
     std::ofstream recordingFile;
     void finalizeRecording();
     
-    int curFrame;
+    void blurAndGrayscaleVideo();
+    void filterColorToMask(ofColor teamColor, cv::Mat& colorFilterMat);
+    int ofColortoCVHue(int hue);
+    void clampHSB(int& hue, int& saturation, int& brightness);
+    
+    std::default_random_engine rng;
 };
