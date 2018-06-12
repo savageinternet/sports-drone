@@ -11,6 +11,21 @@ using namespace ofxCv;
 using namespace cv;
 
 namespace ofxCv {
+    
+    float colorDistance(const ofColor a, const ofColor b) {
+        return sqrtf(pow(a.getHue() - b.getHue(),2)*Player::hue_weight +
+                     pow(a.getSaturation() - b.getSaturation(),2)*Player::saturation_weight +
+                     pow(a.getBrightness() - b.getBrightness(),2)*Player::brightness_weight);
+    }
+    
+    // for these weights as implemented, higher numbers are more weighty
+    float Player::velocity_weight = 1.0f;
+    float Player::numbers_weight = 0.5f;
+    float Player::color_weight = 1.0f;
+    float Player::loc_weight = 1.0f;
+    float Player::size_weight = .5f;
+    float Player::hue_weight = 1.0f, Player::saturation_weight = 0.3f, Player::brightness_weight = 0.3f;
+    
     float trackingDistance(const Player& a, const Player& b) {
         /* notes from valkyrie :D
         * we want to make this track "players" instead of "rectangles". hope this override works!
@@ -25,19 +40,13 @@ namespace ofxCv {
         */
         // are the blobs going the same direction?
         float velocity_similarity = a.velocity.getNormalized().dot(b.velocity.getNormalized());
-        float velocity_weight = 1.0f;
         
         // just check if the #s are the same. barcode reading makes it hard to say something is "close"
         bool numbers_same = a.jerseyID == b.jerseyID;
         float numbers_similarity = (numbers_same ? 1.0f : 0.0f);
-        float numbers_weight = .5f;
         
         // we use euclidean distance between HSB colors because we're fuckin' hacks
-        float hue_weight = 1.0f, saturation_weight = 0.3f, brightness_weight = 0.3f;
-        float color_similarity = sqrtf(pow(a.jerseyColor.getHue() - b.jerseyColor.getHue(),2)*hue_weight +
-                                       pow(a.jerseyColor.getSaturation() - b.jerseyColor.getSaturation(),2)*saturation_weight +
-                                       pow(a.jerseyColor.getBrightness() - b.jerseyColor.getBrightness(),2)*brightness_weight);
-        float color_weight = 1.0f;
+        float color_similarity = colorDistance(a.jerseyColor, b.jerseyColor);
         
         // are the blobs in about the same spot?
         float d_x = (a.rect.x + a.rect.width / 2.) - (b.rect.x + b.rect.width / 2.);
@@ -46,19 +55,17 @@ namespace ofxCv {
         // we know how humans work, so we can actually cap the maximum distance that a human could move
         // between two frames here.
         // and... we can check if one plus its velocity = the other! wouldn't that be clever...
-        float loc_weight = 1.0f;
         
         // are the blobs about the same size?
         float d_wid = a.rect.width - b.rect.width;
         float d_ht = a.rect.height - b.rect.height;
         float size_difference = sqrtf(d_wid * d_wid + d_ht * d_ht);
-        float size_weight = .5f;
         
-        float similarity = velocity_similarity * velocity_weight +
-                            color_similarity * color_weight +
-                            numbers_similarity * numbers_weight +
-                            loc_difference * loc_weight +
-                            size_difference * size_weight;
+        float similarity = velocity_similarity * 1./Player::velocity_weight +
+                            color_similarity * 1./Player::color_weight +
+                            numbers_similarity * 1./Player::numbers_weight +
+                            loc_difference * 1./Player::loc_weight +
+                            size_difference * 1./Player::size_weight;
         
         return similarity;
     }

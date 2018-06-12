@@ -88,6 +88,16 @@ public:
     // this is a little separate...
     ofParameter<bool> showContourFinder;
     
+    ofParameterGroup matchingParameters;
+    ofParameter<float> loc_weight;
+    ofParameter<float> velocity_weight;
+    ofParameter<float> color_weight;
+    ofParameter<float> size_weight;
+    ofParameter<float> hue_weight;
+    ofParameter<float> saturation_weight;
+    ofParameter<float> brightness_weight;
+    ofParameter<float> number_weight;
+    
     void showVideoPressed(ofAbstractParameter &pressed);
     
     ofxPanel processingGui;

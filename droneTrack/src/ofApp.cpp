@@ -75,6 +75,9 @@ void Glow::record(std::ofstream& fileStream) {
 void Glow::doRecord(std::ofstream& fileStream) {
     json j;
     j["label"] = label;
+    j["color"]["r"] = color.r;
+    j["color"]["g"] = color.g;
+    j["color"]["b"] = color.b;
     j["path"] = {};
     for (int i = 0; i < timestampPositions.size(); i++) {
         timepoint tp = timestampPositions.at(i);
@@ -121,14 +124,14 @@ void ofApp::setup() {
     processingGui.setup("Processing/Display");
     
     processingParameters.setName("Processing Parameters");
-    processingParameters.add(minRadius.set("Min radius:",7,0,100));
+    processingParameters.add(minRadius.set("Min radius:",3,0,100));
     processingParameters.add(maxRadius.set("Max radius:",15,0,100));
-    processingParameters.add(persistence.set("Persistence (frames):",54,0,160));
-    processingParameters.add(maxVelocity.set("Max distance:",30,0,500));
+    processingParameters.add(persistence.set("Persistence (frames):",64,0,160));
+    processingParameters.add(maxVelocity.set("Max distance:",90,0,500));
     processingParameters.add(blurRadius.set("Blur radius:",12,0,100));
     processingParameters.add(thresholdB.set("Simple threshold?",false));
     processingParameters.add(thresholdValue.set("Threshold:",90,0,255));
-    processingParameters.add(useTeamColorSubtractB.set("Team color subtraction?",false));
+    processingParameters.add(useTeamColorSubtractB.set("Team color subtraction?",true));
     processingParameters.add(hRange.set("Hue range",66,0,180));
     processingParameters.add(sRange.set("Sat range",255,0,255));
     processingParameters.add(bRange.set("Bri range",160,0,255));
@@ -142,6 +145,17 @@ void ofApp::setup() {
     displayParameters.add(showT2Filter.set("Show Team2 filter", false));
     displayParameters.add(showContourFinder.set("Show found contours", true));
     processingGui.add(displayParameters);
+    
+    matchingParameters.setName("Matching Parameters");
+    matchingParameters.add(loc_weight.set("Location weight",1.5f,0.0f,3.0f));
+    matchingParameters.add(velocity_weight.set("Velocity weight",1.0f,0.0f,3.0f));
+    matchingParameters.add(size_weight.set("Size weight",0.5f,0.0f,3.0f));
+    matchingParameters.add(color_weight.set("Color weight",1.0f,0.0f,3.0f));
+    matchingParameters.add(hue_weight.set("->Hue weight",1.0f,0.0f,3.0f));
+    matchingParameters.add(saturation_weight.set("->Saturation weight",.3f,0.0f,3.0f));
+    matchingParameters.add(brightness_weight.set("->Brightness weight",.1f,0.0f,3.0f));
+    matchingParameters.add(number_weight.set("Number weight",0.5f,0.0f,3.0f));
+    processingGui.add(matchingParameters);
     
     processingGui.setPosition(1070,10);
     
@@ -202,6 +216,16 @@ void ofApp::update() {
     videoDetails.updateExpectedPlayerCount(numberPlayers);
     videoDetails.updateSport(static_cast<SportName>(sportEnumChooser.get()));
     
+    // update player matching weights
+    Player::loc_weight = loc_weight;
+    Player::velocity_weight = velocity_weight;
+    Player::size_weight = size_weight;
+    Player::color_weight = color_weight;
+    Player::hue_weight = hue_weight;
+    Player::saturation_weight = saturation_weight;
+    Player::brightness_weight = brightness_weight;
+    Player::numbers_weight = number_weight;
+    
     // stop recording when we get to the end
     if(recordRunthrough && movie.getIsMovieDone()) {
         recordRunthrough = false;
@@ -234,7 +258,6 @@ void ofApp::update() {
         int h = colorFrameBlurred.getHeight();
         int type = colorFrameBlurred.getImageType();
         ofPixels pixels = colorFrameBlurred.getPixels();
-        unsigned long bpp = pixels.getBytesPerPixel() / 8;
 
         for(unsigned int i = 0; i < contourFinder.getBoundingRects().size(); i++) {
             Player p;
@@ -243,29 +266,31 @@ void ofApp::update() {
             
             // extract the average pixel color from around the centroid? need to think about exactly what to do here. be sure to use the blurred video, I guess, since it will de-noise shit?
             // select a few random points within the rectangle and record their hsv color values
-            ofColor avgHSB(0,0,0);
-            std::normal_distribution<float> distx(p.rect.x + (p.rect.width/2.0),p.rect.width/4.0);
-            std::normal_distribution<float> disty(p.rect.y + (p.rect.height/2.0),p.rect.height/4.0);
-            int numToAvg = 10;
+            ofPoint centre = toOf(p.rect).getCenter();
+            std::normal_distribution<float> distx(centre.x,p.rect.width/7.0);
+            std::normal_distribution<float> disty(centre.y,p.rect.height/7.0);
+            int numToAvg = 4;
+            int Rsum = 0, Gsum = 0 ,Bsum = 0;
             for (int i = 0; i < numToAvg; i++) {
                 ofPoint pt;
-                p.rect.x = distx(rng);
-                p.rect.y = disty(rng);
+                pt.x = distx(rng);
+                pt.y = disty(rng);
                 
-                float cRed = pixels[(p.rect.y*w+p.rect.x)*bpp+0];
-                float cGreen = pixels[(p.rect.y*w+p.rect.x)*bpp+1];
-                float cBlue = pixels[(p.rect.y*w+p.rect.x)*bpp+2];
-                ofColor here(cRed, cGreen, cBlue);
-                avgHSB.setHue(avgHSB.getHue() + here.getHue()/numToAvg);
-                avgHSB.setSaturation(avgHSB.getSaturation() + here.getSaturation()/numToAvg);
-                avgHSB.setBrightness(avgHSB.getBrightness() + here.getBrightness()/numToAvg);
+                ofColor here = pixels.getColor(pt.x, pt.y);
+                Rsum += here.r;
+                Gsum += here.g;
+                Bsum += here.b;
             }
+            ofColor avgHSB(Rsum / numToAvg,Gsum / numToAvg,Bsum / numToAvg);
+            avgHSB.setBrightness(255);
+            avgHSB.setSaturation(255);
             // now that we have an average color... we should.. um... check if it matches one of the team colors chosen? or not care?
             p.jerseyColor = avgHSB;
             
             foundPlayers.push_back(p);
         }
-        tracker.track(foundPlayers);//*/contourFinder.getBoundingRects());
+        std::cout << "players: ";
+        tracker.track(foundPlayers);
     }
 }
 
@@ -340,6 +365,7 @@ void ofApp::draw() {
     if (showT2Filter)
         drawMat(team2ColorFilterMat,0,0);
     
+    // use the Savage-developed player tracker
     if (showContourFinder) {
         // draw the rest of the stuff
         contourFinder.draw();

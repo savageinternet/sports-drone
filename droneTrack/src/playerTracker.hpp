@@ -28,10 +28,18 @@ namespace ofxCv {
         int index;
         cv::Rect rect;
         
+        static float velocity_weight;
+        static float numbers_weight;
+        static float color_weight;
+        static float loc_weight;
+        static float size_weight;
+        static float hue_weight, saturation_weight, brightness_weight;
+        
         Player() : jerseyColor(0, 255, 0), jerseyID(1), label(0), index(0) {};
     };
-
+    
     float trackingDistance(const Player& a, const Player& b);
+    float colorDistance(const ofColor a, const ofColor b);
 };
 
 #endif /* playerTracker_hpp */
