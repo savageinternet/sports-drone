@@ -1,4 +1,5 @@
 bin/**
+lib/**
 obj/**
 .vscode/*
 !.vscode/settings.json
