@@ -1,54 +1,67 @@
-var wid = 1280;
-var ht = 720;
+var margin = {top: 19.5, right: 19.5, bottom: 19.5, left: 39.5},
+    width = 960 - margin.right,
+    height = 540 - margin.top - margin.bottom;
 
 var mData;
 
 // stuff
 var svg = d3.select('body')
     .append('svg')        // create an <svg> element
-    .attr('width', wid) // set its dimentions
-    .attr('height', ht);
+    .attr('width', width) // set its dimentions
+    .attr('height', height);
 
 d3.json('/data.json')
   .then(function(data) {
     mData = JSON.parse(JSON.stringify(data));
-    data['tracked'] = filterData(data['tracked']);
+    data.tracked = filterData(data.tracked);
+    fixScale(data);
+    clearDrawing();
     doDrawing(data);
   });
 
-function doDrawing(data) {
-  svg.selectAll("*").remove();
 
-  // define the scales that we use to map our x y things into screen space
-  var x = d3.scaleLinear()
-    .range([0, wid])
-    .domain([0, data['width']]);
-  var y = d3.scaleLinear()
-    .range([0, ht])
-    .domain([data['height'], 0]);
+function frameToTime(frame) {
+  var framesPerSec = 32, secPerMin = 60, minPerHour = 60;
+  var framesPerMin = framesPerSec*secPerMin,
+      framesPerHour = framesPerMin*minPerHour;
+  var hh = Math.floor(frame/framesPerHour);
+  frame = frame - hh*framesPerHour;
+  var mm = Math.floor(frame/framesPerMin);
+  frame = frame - mm*framesPerMin;
+  var ss = Math.floor(frame/framesPerSec);
+  frame = frame - ss*framesPerSec;
+  return `${d3.format("0>2")(hh)}:${d3.format("0>2")(mm)}:${d3.format("0>2")(ss)}.${d3.format("0>2")(frame)}`;
+}
 
-  // TODO would be smart to draw in the field here... need to probably get some data on this from the video first, tho. still, Imma just cheat a lil here... :O
-  // this draws a fakey soccer field
+function fixScale(data) {
+  d3.select("#max-time").html(frameToTime(data.endFrame));
+  d3.select("#slider-time").attr("max", data.endFrame);
+}
+
+function drawField(fieldType, dims) {
+  // TODO want to get this info from the video. need to know field type, and have a dims with {min,max}{x,y}.
+
+  // this draws a fakey soccer field for nowwww
   svg.append("rect")
       .attr("x", 5)
       .attr("y", 5)
-      .attr("width", wid-10)
-      .attr("height", ht-10)
+      .attr("width", width-10)
+      .attr("height", height-10)
       .style("stroke", "black")
       .style("stroke-width", 3)
       .attr("fill", "none");
   // goalie boxes
   svg.append("rect")
       .attr("x", 5)
-      .attr("y", (ht-300)/2+5)
+      .attr("y", (height-300)/2+5)
       .attr("width", 200)
       .attr("height", 300)
       .style("stroke", "black")
       .style("stroke-width", 3)
       .attr("fill", "none");
   svg.append("rect")
-      .attr("x", wid-5-200)
-      .attr("y", (ht-300)/2+5)
+      .attr("x", width-5-200)
+      .attr("y", (height-300)/2+5)
       .attr("width", 200)
       .attr("height", 300)
       .style("stroke", "black")
@@ -58,11 +71,85 @@ function doDrawing(data) {
   svg.append("rect")
       .attr("x", 5)
       .attr("y", 5)
-      .attr("width", (wid-10)/2)
-      .attr("height", ht-10)
+      .attr("width", (width-10)/2)
+      .attr("height", height-10)
       .style("stroke", "black")
       .style("stroke-width", 3)
       .attr("fill", "none");
+}
+
+function clearDrawing() {
+  svg.selectAll("*").remove();
+}
+
+function doDrawing(data) {
+  // the base of this visualization a field illustration
+  drawField(data.sport, data.fieldDims);
+
+  // define the scales that we use to map our x y things into screen space
+  var x = d3.scaleLinear()
+    .range([0, width])
+    .domain([0, data['width']]);
+  var y = d3.scaleLinear()
+    .range([0, height])
+    .domain([data['height'], 0]);
+  function color(d) { return "rgb(" + d.color.r + "," + d.color.g + "," + d.color.b + ")"; };
+  function key(d) { return d.label; }
+
+  // for data interpolation (when we skip frames)
+  var bisect = d3.bisector(function(d) { return d.time; });
+
+  // listen to the slider
+  d3.select("#slider-time")
+    .on("mousemove", function() {
+      displayTime(parseInt(this.value));
+    });
+
+  var dot = svg.append("g")
+      .attr("class", "dots")
+      .selectAll(".dot")
+      .data(interpolateData(0))
+      .enter().append("circle")
+      .attr("class", "dot")
+      .style("fill", function(d) { return color(d); })
+      .call(position);
+
+  // Interpolates the dataset for the given frame.
+  function interpolateData(frame) {
+    return data.tracked.map(function(d) {
+      return {
+        label: d.label,
+        x: interpolateValues(d.path, frame, "x"),
+        y: interpolateValues(d.path, frame, "y"),
+        color: d.color
+      };
+    });
+  }
+
+  // Finds (and possibly interpolates) the value for the specified frame.
+  function interpolateValues(values, frame, coord) {
+    var i = bisect.left(values, frame, 0, values.length - 1),
+        a = values[i];
+    if (i > 0) {
+      var b = values[i - 1],
+          t = (frame - a.time) / (b.time - a.time);
+      return a[coord] * (1 - t) + b[coord] * t;
+    }
+    return a[coord];
+  }
+
+  // Updates the display to show the specified year.
+  function displayTime(frame) {
+    dot.data(interpolateData(frame), key)
+        .call(position);
+  }
+
+  // Positions the dots based on data.
+  function position(dot) {
+    dot.attr("cx", function(d) { return x(d.x); })
+       .attr("cy", function(d) { return y(d.y); })
+       .attr("r", function(d) { return 3; });
+  }
 
   // draw a line for each labelled thingy
   var linez = svg.selectAll("path").data(data['tracked']);
@@ -76,9 +163,7 @@ function doDrawing(data) {
       return line(labelled.path);
     })
     .attr('fill', "none") // don't fill it, that's fucking annoying
-    .attr("stroke", function(labelled) {
-        return "rgb(" + labelled.color.r + "," + labelled.color.g + "," + labelled.color.b + ")";
-    }) // pull out the color we got before
+    .attr("stroke", function(d) { return color(d); })
     ;
 
   // draw a label at the end of each labelled thingy's line
@@ -94,7 +179,7 @@ function doDrawing(data) {
     .attr("text-anchor", "middle")
     .text(function(labelled) { return labelled.label; });
 
-  // draw a dot at the beginning of each labelled thingy's line
+  /* draw a dot at the beginning of each labelled thingy's line
   var circlez = svg.selectAll("circle").data(data['tracked']);
   var newCirclez = circlez.enter();
   newCirclez.append('circle')
@@ -105,11 +190,11 @@ function doDrawing(data) {
       return y(labelled.path[0].y);
     })
     .attr('r', 2)
-    .style('fill', 'black');
+    .style('fill', 'black');*/ // this actually never worked LOL
 
   // title it
   svg.append("text")
-      .attr("x", (wid / 2))
+      .attr("x", (width / 2))
       .attr("y", 30)
       .attr("text-anchor", "middle")
       .style("font-size", "46px")

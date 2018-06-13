@@ -2,8 +2,55 @@
 <head>
   <title>Sports Drone Demo</title>
   <script src="https://d3js.org/d3.v5.min.js"></script>
+  <link href="https://fonts.googleapis.com/css?family=Josefin+Slab" rel="stylesheet">
+  <link href="lib/dragit.css" rel="stylesheet"/>
+  <style>
+body {
+  font-family: "Josefin Slab", serif;
+  margin-left:40px;
+  font-weight: 200;
+  font-size: 14px;
+}
+
+.label {
+  fill: #777;
+}
+
+.time.label {
+  font: 500 196px "Josefin Slab";
+  fill: #ddd;
+}
+
+.player.label {
+  font: 500 196px "Josefin Slab";
+  fill: #ddd;
+}
+
+circle.pointTrajectory {
+   pointer-events: none;
+   stroke: lightgray;
+   fill: black;
+   opacity: 0;
+}
+
+path.lineTrajectory {
+  stroke-width: 2;
+  stroke-opacity: .5;
+  stroke: black;
+  fill: none;
+  pointer-events: none;
+}
+
+.selected {
+  stroke-width: 4;
+}
+  </style>
 </head>
 <body>
   <script src="visualize.js"></script>
+  <div id="chart" style="margin:0px"></div>
+  <span id="min-time">00:00:00.00</span>
+    <input type="range" name="points" min="0" max="1500" step="1" value="0" id="slider-time" style="width:800px">
+  <span id="max-time">00:00:00.00</span>
 </body>
 </html>
