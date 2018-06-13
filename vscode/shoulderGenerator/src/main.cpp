@@ -3,9 +3,7 @@
 
 //========================================================================
 int main() {
-    ofSetupOpenGL(WebcamTestConstants::CAMERA_WIDTH,
-                  WebcamTestConstants::CAMERA_HEIGHT,
-                  OF_WINDOW);
+    ofSetupOpenGL(1280, 720, OF_WINDOW);
 
 	ofRunApp(new ofApp());
 }

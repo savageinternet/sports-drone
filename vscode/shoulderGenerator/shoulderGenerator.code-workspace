@@ -4,10 +4,16 @@
 			"path": "."
 		},
 		{
-			"path": "${workspaceRoot}/../../../../libs/openFrameworks"
+			"path": "../../../../../lib/of_v0.10.0_osx_release/libs/openFrameworks"
 		},
 		{
-			"path": "${workspaceRoot}/../../../../addons"
+			"path": "../../../../../lib/of_v0.10.0_osx_release/addons"
+		},
+		{
+			"path": "../shoulderCodec/src"
+		},
+		{
+			"path": "../shoulderCodec/test"
 		}
 	],
 	"settings": {}
