@@ -106,15 +106,6 @@ void ofApp::setup() {
     //create Background Subtractor object
     bgsub = createBackgroundSubtractorMOG2(); //MOG2 or KNN (? can't get MOG or GMG?)
     
-    contourFinder.setMinAreaRadius(5);
-    contourFinder.setMaxAreaRadius(15);
-    contourFinder.setThreshold(15);
-    
-    // wait half a second (at 32fps) before forgetting something
-    tracker.setPersistence(16);
-    // an object can move up to 30 pixels per frame
-    tracker.setMaximumDistance(30);
-    
     // the GUI bits
     // parameters of the video processing
     processingGui.setup("Processing/Display");
@@ -222,10 +213,24 @@ void ofApp::update() {
     Player::brightness_weight = brightness_weight;
     Player::numbers_weight = number_weight;
     
+    vector<Glow>& followers = tracker.getFollowers();
+    for(int i = 0; i < followers.size(); i++) {
+        followers[i].updateDiedFrame(curFrame);
+        if (recordRunthrough) followers[i].record(recordingFile);
+    }
+
     // stop recording when we get to the end
     if(recordRunthrough && movie.getIsMovieDone()) {
         recordRunthrough = false;
         forceRecord = true;
+        
+        for(int i = 0; i < followers.size(); i++) {
+            followers[i].record(recordingFile, forceRecord);
+        }
+        
+        forceRecord = false;
+        finalizeRecording();
+        recordingFile.close();
     }
     
     if(movie.isFrameNew()) {
@@ -252,7 +257,6 @@ void ofApp::update() {
         std::vector<Player> foundPlayers;
         int w = colorFrameBlurred.getWidth();
         int h = colorFrameBlurred.getHeight();
-        int type = colorFrameBlurred.getImageType();
         ofPixels pixels = colorFrameBlurred.getPixels();
 
         for(unsigned int i = 0; i < contourFinder.getBoundingRects().size(); i++) {
@@ -285,8 +289,9 @@ void ofApp::update() {
             
             foundPlayers.push_back(p);
         }
-        std::cout << "players: ";
         tracker.track(foundPlayers);
+        
+        curFrame++;
     }
 }
 
@@ -368,16 +373,6 @@ void ofApp::draw() {
         vector<Glow>& followers = tracker.getFollowers();
         for(int i = 0; i < followers.size(); i++) {
             followers[i].draw();
-            followers[i].updateDiedFrame(curFrame);
-            if (recordRunthrough) followers[i].record(recordingFile, forceRecord);
-        }
-        
-        // once we've finished the video, we want to force everything to record into the file. after that, clear
-        // our memories of EVERYTHING woooOOOOOooOOOoooooOooo...
-        if(forceRecord) {
-            forceRecord = false;
-            finalizeRecording();
-            recordingFile.close();
         }
         
         // visualize labels. from https://github.com/kylemcdonald/ofxCv/blob/master/example-contours-tracking/src/ofApp.cpp
@@ -435,8 +430,6 @@ void ofApp::draw() {
     // this is all we have to do to draw the GUI???? :D :D :D
     processingGui.draw();
     gui.draw();
-    
-    curFrame++;
 }
 
 void ofApp::loadVideoPressed() {
