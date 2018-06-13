@@ -34,21 +34,21 @@ void ofApp::setup(){
 
     codeParameters.setName("Code Parameters");
     codeParameters.add(n.set("Encoded Value:", 42, 0, 63));
-    codeParameters.add(x0.set("Left:", 64, 128, 1152));
-    codeParameters.add(y0.set("Top:", 64, 64, 592));
-    codeParameters.add(size.set("Size:", 16, 2, 16));
+    codeParameters.add(x0.set("Left:", 256, 256, 1024));
+    codeParameters.add(y0.set("Top:", 120, 120, 600));
+    codeParameters.add(size.set("Size:", 16, 4, 16));
     codeParameters.add(theta.set("Rotation:", 0, 0, 359));
-    codeParameters.add(dTheta.set("Shoulder Rotation:", 0, 0, 30));
-    codeParameters.add(dxUnits.set("Shoulder Separation:", 4.0, 3.0, 5.0));
-    codeParameters.add(occTopUnits.set("Occlusion Top:", 0, 0, 0.5));
-    codeParameters.add(occBottomUnits.set("Occlusion Bottom:", 0, 0, 0.5));
-    codeParameters.add(occLeftUnits.set("Occlusion Left:", 0, 0, 0.5));
-    codeParameters.add(occRightUnits.set("Occlusion Right:", 0, 0, 0.5));
+    codeParameters.add(dTheta.set("Shoulder Rotation:", 0, -30, 30));
+    codeParameters.add(dxUnits.set("Shoulder Separation:", 3.0, 2.5, 3.5));
+    codeParameters.add(occTopUnits.set("Occlusion Top:", 0, 0, 0.25));
+    codeParameters.add(occBottomUnits.set("Occlusion Bottom:", 0, 0, 0.25));
+    codeParameters.add(occLeftUnits.set("Occlusion Left:", 0, 0, 0.25));
+    codeParameters.add(occRightUnits.set("Occlusion Right:", 0, 0, 0.25));
     gui.add(codeParameters);
 
     gui.add(btnRandomizeParameters.setup("Random"));
 
-    gui.setPosition(10, 10);
+    gui.setPosition(0, 0);
 }
 
 //--------------------------------------------------------------
@@ -57,51 +57,63 @@ void ofApp::update(){
 }
 
 void ofApp::ofDrawShoulderCode() {
-    ofPushMatrix();
+    ofPushMatrix();  // shoulder code
     ofTranslate(x0, y0, 0);
+    ofRotateZDeg(theta);
+    ofScale(size);
 
-    int x = 0;
-    int y = 0;
+    ofPushMatrix();  // left shoulder
+    ofRotateZDeg(-dTheta);
+    ofTranslate(-5.0f - dxUnits / 2.0f, -1, 0);
+
+    float top = occTopUnits.get();
+    float bottom = occBottomUnits.get();
+    float left = occLeftUnits.get();
+    float right = occRightUnits.get();
+
     ofSetColor(BLACK);
-    ofDrawRectangle(x, y, size, size);
+    ofDrawRectangle(left, top, 1 - left, 1 - top);
     for (int i = 4; i < 8; i++) {
-        x += size;
         ofSetColor(code[i] ? BLACK : WHITE);
-        ofDrawRectangle(x, y, size, size);
+        float w = i == 7 ? 1 - right : 1;
+        ofDrawRectangle(i - 3, top, w, 1 - top);
     }
-    x += size * dxUnits;
-    for (int i = 11; i >= 8; i--) {
-        x += size;
-        ofSetColor(code[i] ? BLACK : WHITE);
-        ofDrawRectangle(x, y, size, size);
-    }
-    x += size;
     ofSetColor(BLACK);
-    ofDrawRectangle(x, y, size, size);
-
-    x = 0;
-    y += size;
-
-    ofSetColor(BLACK);
-    ofDrawRectangle(x, y, size, size);
+    ofDrawRectangle(left, 1, 1 - left, 1 - bottom);
     for (int i = 0; i < 4; i++) {
-        x += size;
         ofSetColor(code[i] ? BLACK : WHITE);
-        ofDrawRectangle(x, y, size, size);
+        float w = i == 3 ? 1 - right : 1;
+        ofDrawRectangle(i + 1, 1, w, 1 - bottom);
     }
-    x += size * dxUnits;
+
+    ofPopMatrix();  // end left shoulder
+
+    ofPushMatrix();  // right shoulder
+    ofRotateZDeg(dTheta);
+    ofTranslate(dxUnits / 2.0f, -1, 0);
+
     for (int i = 15; i >= 12; i--) {
-        x += size;
         ofSetColor(code[i] ? BLACK : WHITE);
-        ofDrawRectangle(x, y, size, size);
+        float dx = i == 15 ? left : 0;
+        float w = i == 15 ? 1 - left : 1;
+        ofDrawRectangle(15 - i + dx, top, w, 1 - top);
     }
-    x += size;
     ofSetColor(BLACK);
-    ofDrawRectangle(x, y, size, size);
-    
-    // reset for next operation
+    ofDrawRectangle(4, top, 1 - right, 1 - top);
+    for (int i = 11; i >= 8; i--) {
+        ofSetColor(code[i] ? BLACK : WHITE);
+        float dx = i == 11 ? left : 0;
+        float w = i == 11 ? 1 - left : 1;
+        ofDrawRectangle(11 - i + dx, 1, w, 1 - bottom);
+    }
+    ofSetColor(BLACK);
+    ofDrawRectangle(4, 1, 1 - right, 1 - bottom);
+
+    ofPopMatrix();  // end right shoulder
+    ofPopMatrix();  // end shoulder code
+
+    // set color back to avoid tinting background
     ofSetColor(WHITE);
-    ofPopMatrix();
 }
 
 //--------------------------------------------------------------
@@ -184,14 +196,14 @@ void ofApp::dragEvent(ofDragInfo dragInfo){
 
 void ofApp::onClickRandomizeParameters() {
     n = rand() % 64;
-    x0 = 128 + rand() % 1024;
-    y0 = 64 + rand() % 528;
-    size = 2 + rand() % 15;
+    x0 = 256 + rand() % 768;
+    y0 = 120 + rand() % 480;
+    size = 4 + rand() % 12;
     theta = rand() % 360;
-    dTheta = rand() % 30;
-    dxUnits = (300 + rand() % 200) / 100.0f;
-    occTopUnits = (rand() % 50) / 100.0f;
-    occBottomUnits = (rand() % 50) / 100.0f;
-    occLeftUnits = (rand() % 50) / 100.0f;
-    occRightUnits = (rand() % 50) / 100.0f;
+    dTheta = -30 + rand() % 60;
+    dxUnits = (250 + rand() % 100) / 100.0f;
+    occTopUnits = (rand() % 25) / 100.0f;
+    occBottomUnits = (rand() % 25) / 100.0f;
+    occLeftUnits = (rand() % 25) / 100.0f;
+    occRightUnits = (rand() % 25) / 100.0f;
 }
