@@ -126,7 +126,11 @@ void ofApp::draw(){
 string ofApp::getCurrentImageFilePath() {
     string outputDir = ofFilePath::join(projectRoot, "out");
     ostringstream filename;
-    filename << "sc_" << time(NULL) << OUTPUT_EXT;
+    filename << "sc_" <<
+        "n" << n << "_" <<
+        "x" << x0 << "_" <<
+        "y" << y0 << "_" <<
+        "r" << theta << OUTPUT_EXT;
     return ofFilePath::join(outputDir, filename.str());
 }
 
