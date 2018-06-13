@@ -17,6 +17,7 @@ class ofApp : public ofBaseApp{
 private:
     static const int WHITE = 255;
     static const int BLACK = 0;
+    static const string OUTPUT_EXT;
 
     ofImage background;
     bitset<16> code;
@@ -30,8 +31,19 @@ private:
     ofParameter<int> x0;
     ofParameter<int> y0;
     ofParameter<int> size;
+    ofParameter<int> theta;
+    ofParameter<int> dTheta;
+    ofParameter<float> dxUnits;
+    ofParameter<float> occTopUnits;
+    ofParameter<float> occBottomUnits;
+    ofParameter<float> occLeftUnits;
+    ofParameter<float> occRightUnits;
 
-    void ofDrawShoulderCode(int x0, int y0, int size);
+    ofxButton btnRandomizeParameters;
+
+    void ofDrawShoulderCode();
+    string getCurrentImageFilePath();
+    void saveCurrentImage();
 public:
     void setup();
     void update();
@@ -48,4 +60,6 @@ public:
     void windowResized(int w, int h);
     void dragEvent(ofDragInfo dragInfo);
     void gotMessage(ofMessage msg);
+
+    void onClickRandomizeParameters();
 };
