@@ -5,6 +5,7 @@
 
 #include "ofMain.h"
 #include "ofxCv.h"
+#include "ofxGui.h"
 
 #include "ShoulderCodec.hpp"
 
@@ -21,6 +22,14 @@ private:
     bitset<16> code;
     ShoulderCodec codec;
     string projectRoot;
+
+    ofxPanel gui;
+
+    ofParameterGroup codeParameters;
+    ofParameter<int> n;
+    ofParameter<int> x0;
+    ofParameter<int> y0;
+    ofParameter<int> size;
 
     void ofDrawShoulderCode(int x0, int y0, int size);
 public:

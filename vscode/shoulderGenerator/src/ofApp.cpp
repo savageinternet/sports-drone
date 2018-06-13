@@ -3,6 +3,7 @@
 
 #include "ofApp.h"
 #include "ofxCv.h"
+#include "ofxGui.h"
 
 #include "ShoulderCodec.hpp"
 
@@ -12,16 +13,27 @@ using namespace std;
 
 //--------------------------------------------------------------
 void ofApp::setup(){
-    codec.encode(42, code);
     projectRoot = ofFilePath::getAbsolutePath("../../../..", false);
     
     // load football pitch texture
     string imgPath = ofFilePath::join(projectRoot, "img/football_pitch_720p.jpg");
     background.load(imgPath);
+
+    gui.setup("Code Generation");
+
+    codeParameters.setName("Code Parameters");
+    codeParameters.add(n.set("Encoded Value:", 42, 0, 63));
+    codeParameters.add(x0.set("Left:", 64, 128, 1152));
+    codeParameters.add(y0.set("Top:", 64, 64, 592));
+    codeParameters.add(size.set("Size:", 16, 2, 32));
+    gui.add(codeParameters);
+
+    gui.setPosition(10, 10);
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
+    codec.encode(n, code);
 }
 
 void ofApp::ofDrawShoulderCode(int x0, int y0, int size) {
@@ -70,7 +82,8 @@ void ofApp::ofDrawShoulderCode(int x0, int y0, int size) {
 //--------------------------------------------------------------
 void ofApp::draw(){
     background.draw(0, 0);
-    ofDrawShoulderCode(128, 128, 64);
+    ofDrawShoulderCode(x0, y0, size);
+    gui.draw();
 }
 
 //--------------------------------------------------------------
