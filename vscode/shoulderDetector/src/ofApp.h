@@ -8,6 +8,7 @@
 #include "ofxGui.h"
 
 #include "ShoulderCodec.hpp"
+#include "ShoulderDetector.hpp"
 
 using namespace cv;
 using namespace ofxCv;
@@ -16,16 +17,20 @@ using namespace std;
 class ofApp : public ofBaseApp{
 private:
     static const int WHITE = 255;
-    static const int BLACK = 0;
-    static const string OUTPUT_EXT;
 
+    bitset<16> code;
+    int result;
+    ShoulderCodec codec;
+    ofPolyline contour;
+    ShoulderDetector detector;
     ofImage image;
     string projectRoot;
+    bool ranImageDetection;
 
     int n;
     int x0;
     int y0;
-    int theta;
+    float theta;
 
     ofxPanel gui;
     ofxButton btnLoadImage;

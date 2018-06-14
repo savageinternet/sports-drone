@@ -17,11 +17,10 @@ using namespace cv;
 using namespace ofxCv;
 using namespace std;
 
-const string ofApp::OUTPUT_EXT = ".png";
-
 //--------------------------------------------------------------
 void ofApp::setup(){
     projectRoot = ofFilePath::getAbsolutePath("../../../..", false);
+    ranImageDetection = true;
 
     btnLoadImage.addListener(this, &ofApp::onClickLoadImage);
     gui.setup("Settings");
@@ -31,13 +30,41 @@ void ofApp::setup(){
 
 //--------------------------------------------------------------
 void ofApp::update(){
-
+    if (!image.isAllocated() || ranImageDetection) {
+        return;
+    }
+    contour.clear();
+    contour.addVertex(x0 - 100, y0 - 100);
+    contour.addVertex(x0 + 100, y0 - 100);
+    contour.addVertex(x0 + 100, y0 + 100);
+    contour.addVertex(x0 - 100, y0 + 100);
+    contour.close();
+    detector.detect(
+        image.getPixels(),
+        contour,
+        theta,
+        code);
+    ranImageDetection = true;
 }
 
 //--------------------------------------------------------------
 void ofApp::draw(){
     if (image.isAllocated()) {
         image.draw(0, 0);
+        if (ranImageDetection) {
+            ofSetColor(255, 0, 0);
+            contour.draw();
+            
+            ofSetColor(0, 255, 0);
+            ofDrawLine(x0 + 20 * cos(theta), y0 + 20 * sin(theta), x0 - 20 * cos(theta), y0 - 20 * sin(theta));
+            ofDrawLine(x0, y0, x0 + 10 * sin(theta), y0 - 10 * cos(theta));
+
+            ofSetColor(0, 255, 255);
+            ofDrawLine(x0 - 5, y0, x0 + 5, y0);
+            ofDrawLine(x0, y0 - 5, x0, y0 + 5);
+
+            ofSetColor(WHITE);
+        }
     }
     gui.draw();
 }
@@ -119,7 +146,9 @@ void ofApp::onClickLoadImage() {
     part = parts[3].c_str();
     y0 = atoi(part + 1);
     part = parts[4].c_str();
-    theta = atoi(part + 1);
+    int thetaDeg = atoi(part + 1);
+    theta = thetaDeg / 180.0 * M_PI;
 
     image.load(openFileResult.getPath());
+    ranImageDetection = false;
 }
