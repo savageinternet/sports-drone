@@ -47,7 +47,7 @@ function drawField(fieldType, dims) {
       .attr("y", 5)
       .attr("width", width-10)
       .attr("height", height-10)
-      .style("stroke", "black")
+      .style("stroke", "#aaa")
       .style("stroke-width", 3)
       .attr("fill", "none");
   // goalie boxes
@@ -56,7 +56,7 @@ function drawField(fieldType, dims) {
       .attr("y", (height-300)/2+5)
       .attr("width", 200)
       .attr("height", 300)
-      .style("stroke", "black")
+      .style("stroke", "#aaa")
       .style("stroke-width", 3)
       .attr("fill", "none");
   svg.append("rect")
@@ -64,7 +64,7 @@ function drawField(fieldType, dims) {
       .attr("y", (height-300)/2+5)
       .attr("width", 200)
       .attr("height", 300)
-      .style("stroke", "black")
+      .style("stroke", "#aaa")
       .style("stroke-width", 3)
       .attr("fill", "none");
   // half
@@ -73,7 +73,7 @@ function drawField(fieldType, dims) {
       .attr("y", 5)
       .attr("width", (width-10)/2)
       .attr("height", height-10)
-      .style("stroke", "black")
+      .style("stroke", "#aaa")
       .style("stroke-width", 3)
       .attr("fill", "none");
 }
@@ -94,6 +94,9 @@ function doDrawing(data) {
     .range([0, height])
     .domain([data['height'], 0]);
   function color(d) { return "rgb(" + d.color.r + "," + d.color.g + "," + d.color.b + ")"; };
+  function opacity(d, frame) {
+    return (frame < d.born || frame > d.died)? 0.0 : 1.0;
+  }
   function key(d) { return d.label; }
 
   // for data interpolation (when we skip frames)
@@ -108,11 +111,25 @@ function doDrawing(data) {
   var dot = svg.append("g")
       .attr("class", "dots")
       .selectAll(".dot")
-      .data(interpolateData(0))
+      .data(interpolateData(1))
       .enter().append("circle")
-      .attr("class", "dot")
-      .style("fill", function(d) { return color(d); })
-      .call(position);
+        .attr("class", "dot")
+        .style("fill", function(d) { return color(d); })
+        .style("opacity", function(d) { return opacity(d, 1); })
+        .attr("r", 6)
+        .call(positionFade);
+
+  // draw a label at the current position of each labelled thingy
+  var text = svg.append("g")
+      .attr("class", "label")
+      .selectAll(".label")
+      .data(interpolateData(1))
+      .enter().append("text")
+        .attr("class", "label")
+        .style("stroke", "black")
+        .attr("text-anchor", "middle")
+        .text(function(d) { return key(d); })
+        .call(positionText);
 
   // Interpolates the dataset for the given frame.
   function interpolateData(frame) {
@@ -121,7 +138,8 @@ function doDrawing(data) {
         label: d.label,
         x: interpolateValues(d.path, frame, "x"),
         y: interpolateValues(d.path, frame, "y"),
-        color: d.color
+        color: d.color,
+        opacity: opacity(d, frame)
       };
     });
   }
@@ -141,18 +159,25 @@ function doDrawing(data) {
   // Updates the display to show the specified year.
   function displayTime(frame) {
     dot.data(interpolateData(frame), key)
-        .call(position);
+        .call(positionFade);
+    text.data(interpolateData(frame), key)
+        .call(positionText);
   }
 
-  // Positions the dots based on data.
-  function position(dot) {
-    dot.attr("cx", function(d) { return x(d.x); })
+  function positionFade(obj) {
+    obj.attr("cx", function(d) { return x(d.x); })
        .attr("cy", function(d) { return y(d.y); })
-       .attr("r", function(d) { return 3; });
+       .style("opacity", function(d) { return d.opacity; });
+  }
+
+  function positionText(obj) {
+    obj.attr("x", function(d) { return x(d.x); })
+       .attr("y", function(d) { return y(d.y); })
+       .style("opacity", function(d) { return d.opacity; });
   }
 
   // draw a line for each labelled thingy
-  var linez = svg.selectAll("path").data(data['tracked']);
+  var linez = svg.selectAll("path").data(data.tracked);
   var line = d3.line()
     .x(function(d) { return x(d.x); })
     .y(function(d) { return y(d.y); })
@@ -164,33 +189,8 @@ function doDrawing(data) {
     })
     .attr('fill', "none") // don't fill it, that's fucking annoying
     .attr("stroke", function(d) { return color(d); })
+    .attr('opacity', .3)
     ;
-
-  // draw a label at the end of each labelled thingy's line
-  var textz = svg.selectAll("text").data(data['tracked']);
-  var newTextz = textz.enter();
-  newTextz.append('text')
-    .attr('x', function(labelled) {
-      return x(labelled.path[labelled.path.length - 1].x);
-    })
-    .attr('y', function(labelled) {
-      return y(labelled.path[labelled.path.length - 1].y);
-    })
-    .attr("text-anchor", "middle")
-    .text(function(labelled) { return labelled.label; });
-
-  /* draw a dot at the beginning of each labelled thingy's line
-  var circlez = svg.selectAll("circle").data(data['tracked']);
-  var newCirclez = circlez.enter();
-  newCirclez.append('circle')
-    .attr('x', function(labelled) {
-      return x(labelled.path[0].x);
-    })
-    .attr('y', function(labelled) {
-      return y(labelled.path[0].y);
-    })
-    .attr('r', 2)
-    .style('fill', 'black');*/ // this actually never worked LOL
 
   // title it
   svg.append("text")
