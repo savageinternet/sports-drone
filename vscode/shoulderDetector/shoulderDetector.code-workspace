@@ -1,0 +1,40 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../../../../../lib/of_v0.10.0_osx_release/libs/openFrameworks"
+		},
+		{
+			"path": "../../../../../lib/of_v0.10.0_osx_release/addons"
+		},
+		{
+			"path": "../shoulderCodec/src"
+		},
+		{
+			"path": "../shoulderCodec/test"
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"iosfwd": "cpp",
+			"__locale": "cpp",
+			"ios": "cpp",
+			"__split_buffer": "cpp",
+			"deque": "cpp",
+			"list": "cpp",
+			"string": "cpp",
+			"vector": "cpp",
+			"sstream": "cpp",
+			"__functional_base": "cpp",
+			"array": "cpp",
+			"istream": "cpp",
+			"locale": "cpp",
+			"memory": "cpp",
+			"thread": "cpp",
+			"tuple": "cpp",
+			"utility": "cpp"
+		}
+	}
+}
