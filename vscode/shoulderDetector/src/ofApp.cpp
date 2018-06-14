@@ -104,8 +104,22 @@ void ofApp::onClickLoadImage() {
         return;
     }
     string filename = openFileResult.getName();
+    filename = ofFilePath::removeExt(filename);
     vector<string> parts;
     StringUtils::split(filename, "_", parts);
+    /*
+     * For now, we do absolutely no validation; the main point here is to get the parameters
+     * so we can test the detector, not write a super-robust filename parser.
+     */
+    const char* part;
+    part = parts[1].c_str();
+    n = atoi(part + 1);
+    part = parts[2].c_str();
+    x0 = atoi(part + 1);
+    part = parts[3].c_str();
+    y0 = atoi(part + 1);
+    part = parts[4].c_str();
+    theta = atoi(part + 1);
 
     image.load(openFileResult.getPath());
 }

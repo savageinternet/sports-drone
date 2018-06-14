@@ -34,7 +34,8 @@
 			"memory": "cpp",
 			"thread": "cpp",
 			"tuple": "cpp",
-			"utility": "cpp"
+			"utility": "cpp",
+			"stdexcept": "cpp"
 		}
 	}
 }

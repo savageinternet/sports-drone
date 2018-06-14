@@ -61,7 +61,11 @@ PROJECT_EXTERNAL_SOURCE_PATHS = $(PROJECT_ROOT)/../shoulderCodec/src
 #
 #   Note: Leave a leading space when adding list items with the += operator
 ################################################################################
-# PROJECT_EXCLUSIONS =
+PROJECT_EXCLUSIONS = $(PROJECT_ROOT)/bin%
+PROJECT_EXCLUSIONS += $(PROJECT_ROOT)/obj%
+PROJECT_EXCLUSIONS += $(PROJECT_ROOT)/%.xcodeproj
+
+PROJECT_EXCLUSIONS += $(PROJECT_ROOT)/test%
 
 ################################################################################
 # PROJECT LINKER FLAGS
