@@ -2,20 +2,32 @@ var margin = {top: 20, right: 20, bottom: 20, left: 40},
     width = 960 - margin.right,
     height = 540 - margin.top - margin.bottom;
 
-var mData;
+var timeLineDims = {
+    width: d3.select('#underlay').node().getBoundingClientRect().width,
+    height: d3.select('#underlay').node().getBoundingClientRect().height
+};
 
-// stuff
-var svg = d3.select('body')
+// stuff for structure
+var svg = d3.select('#chart-placeholder')
     .append('svg')        // create an <svg> element
-    .attr('width', width) // set its dimentions
+    .attr('width', width) // set its dimensions
     .attr('height', height);
 
-d3.json('/data.json')
+var timeUnderlay = d3.select('#underlay')
+      .append('svg')
+      .attr('width', timeLineDims.width)
+      .attr('height', timeLineDims.height);
+
+var vid = d3.select("#soccervid")._groups[0][0];
+
+//d3.json('/data.json')
+d3.json('/data-smallest.json')
   .then(function(data) {
-    mData = JSON.parse(JSON.stringify(data));
-    data.tracked = filterData(data.tracked);
+    var mData = JSON.parse(JSON.stringify(data));
+    //data.tracked = filterData(data.tracked);
     fixScale(data);
-    clearDrawing();
+    clearDrawing(svg);
+    clearDrawing(timeUnderlay);
     doDrawing(data);
   });
 
@@ -30,7 +42,10 @@ function frameToTime(frame) {
   frame = frame - mm*framesPerMin;
   var ss = Math.floor(frame/framesPerSec);
   frame = frame - ss*framesPerSec;
-  return `${d3.format("0>2")(hh)}:${d3.format("0>2")(mm)}:${d3.format("0>2")(ss)}.${d3.format("0>2")(frame)}`;
+
+  var twoDigitify = d3.format("0>2");
+
+  return `${twoDigitify(hh)}:${twoDigitify(mm)}:${twoDigitify(ss)}.${twoDigitify(frame)}`
 }
 
 function durationToTime(duration) {
@@ -42,14 +57,32 @@ function durationToTime(duration) {
   duration = duration - mm*secPerMin;
   var ss = Math.floor(duration);
   var frame = Math.ceil((duration-ss)*framesPerSec);
-  return `${d3.format("0>2")(hh)}:${d3.format("0>2")(mm)}:${d3.format("0>2")(ss)}.${d3.format("0>2")(frame)}`
+
+  var twoDigitify = d3.format("0>2");
+
+  return `${twoDigitify(hh)}:${twoDigitify(mm)}:${twoDigitify(ss)}.${twoDigitify(frame)}`
 }
 
 function fixScale(data) {
-  var vid = d3.select("#soccervid")._groups[0][0];
   d3.select("#max-time").html(durationToTime(vid.duration));
 
   d3.select("#slider-time").attr("max", data.endFrame);
+}
+
+function findFramesOfIntersect(data, circle) {
+  var timePoints = [];
+  for (var i = 0; i < data.length; i++) {
+    var player = data[i];
+    for (var j = 0; j < player.path.length - 1; j++) {
+      var segStart = player.path[j];
+      var segEnd = player.path[j+1];
+      var intersections = getIntersections(segStart, segEnd, circle);
+      if (intersections.points || intersections.pointOnLine) {
+        timePoints.push(player.path[j].time);
+      }
+    }
+  }
+  return timePoints;
 }
 
 function drawField(fieldType, dims) {
@@ -92,8 +125,8 @@ function drawField(fieldType, dims) {
       .attr("fill", "none");
 }
 
-function clearDrawing() {
-  svg.selectAll("*").remove();
+function clearDrawing(drawing) {
+  drawing.selectAll("*").remove();
 }
 
 function doDrawing(data) {
@@ -104,9 +137,15 @@ function doDrawing(data) {
   var x = d3.scaleLinear()
     .range([0, width])
     .domain([0, data['width']]);
+  var unx = d3.scaleLinear()
+    .domain([0, width])
+    .range([0, data['width']]);
   var y = d3.scaleLinear()
     .range([height, 0])
     .domain([data['height'], 0]);
+  var uny = d3.scaleLinear()
+    .domain([height, 0])
+    .range([data['height'], 0]);
   function color(d) { return "rgb(" + d.color.r + "," + d.color.g + "," + d.color.b + ")"; };
   function opacity(d, frame) {
     return (frame < d.born || frame > d.died)? 0.0 : 1.0;
@@ -125,7 +164,7 @@ function doDrawing(data) {
   var dot = svg.append("g")
       .attr("class", "dots")
       .selectAll(".dot")
-      .data(interpolateData(1))
+      .data(interpolateData(0))
       .enter().append("circle")
         .attr("class", "dot")
         .style("fill", function(d) { return color(d); })
@@ -137,7 +176,7 @@ function doDrawing(data) {
   var text = svg.append("g")
       .attr("class", "label")
       .selectAll(".label")
-      .data(interpolateData(1))
+      .data(interpolateData(0))
       .enter().append("text")
         .attr("class", "label")
         .style("stroke", "black")
@@ -170,7 +209,7 @@ function doDrawing(data) {
     return a[coord];
   }
 
-  // Updates the display to show the specified year.
+  // Updates the display to show the specified frame / time.
   function displayTime(frame) {
     dot.data(interpolateData(frame), key)
         .call(positionFade);
@@ -179,7 +218,7 @@ function doDrawing(data) {
     var vid = d3.select("#soccervid")._groups[0][0];
     vid.play()
       .then(function() {
-        vid.currentTime = (frame-1)/d3.select("#slider-time").attr("max")*vid.duration;
+        vid.currentTime = frame/d3.select("#slider-time").attr("max")*vid.duration;
         vid.pause();
       });
   }
@@ -201,7 +240,7 @@ function doDrawing(data) {
   var line = d3.line()
     .x(function(d) { return x(d.x); })
     .y(function(d) { return y(d.y); })
-    .curve(d3.curveCardinal); // make it a li'l curvy
+    //.curve(d3.curveCardinal); // make it a li'l curvy (don't do this; it kinda fucks with intersection calculations... :( ))
   var newLinez = linez.enter();
   newLinez.append('path')
     .attr('d', function(labelled) {
@@ -219,111 +258,34 @@ function doDrawing(data) {
       .attr("text-anchor", "middle")
       .style("font-size", "46px")
       .text(data['sport']);
-}
 
-function distance(ptA, ptB) {
-  return Math.sqrt(Math.pow(ptA.x-ptB.x,2)+Math.pow(ptA.y-ptB.y,2));
-}
 
-function nearby(ptA, ptB) {
-  var sensibleDistance = 10.0; // the unit here is pixels.
-  return distance(ptA,ptB) < sensibleDistance;
-}
+  svg.on("click", function () {
+      var mouse = d3.mouse(this);
+      var x = mouse[0];
+      var y = mouse[1];
+      var r = 20;
+      svg
+          .append("circle")
+          .attr("cx", mouse[0])
+          .attr("cy", mouse[1])
+          .style("fill", "#777")
+          .style("opacity", ".3")
+          .attr("r", r);
 
-function lineLength(path) {
-  var sumDistance = 0;
-  for (var i = 0; i < path.length - 1; i++) {
-    sumDistance += distance(path[i], path[i+1]);
-  }
-  return sumDistance;
-}
+      clearDrawing(timeUnderlay);
 
-function removeIdxsFromArray(idxs, arr) {
-  idxs.sort(function(a,b) { return a - b });
-  for(var rem_i of idxs.reverse()) {
-    arr.splice(rem_i,1);
-  }
-  return arr;
-}
+      var timesToHighlight = findFramesOfIntersect(data.tracked, {x: unx(x), y: uny(y), r: unx(r)});
 
-function stringTogether(data) {
-  var remove = [];
-
-  // join them up into bigger things. we'll see if we have several parts that make up a single object's path. this can happen if someone stands still for a while and the CV algorithm forgets about them before they move again.
-  for(var i=0; i < data.length; i++) {
-    if (remove.includes(i)) continue; // don't look at stuff we've "removed"
-    var pathIEnd = data[i].path[data[i].path.length - 1];
-    // we'll just check the ones forward of where we are. this way we know we can just look at if our path ends where the next one starts (since j will come after I temporally), rather than looking at it both ways.
-    for (var j=i+1; j < data.length; j++) {
-      if (remove.includes(j)) continue; // we already attached it to something else
-      if (data[j].born < data[i].died) continue; // violates temporality
-      if ((data[j].born - data[i].died) > 64) continue; // that's just silly. if it's been 2 seconds, they're probably not the same object.
-      var pathJStart = data[j].path[0];
-      if (nearby(pathIEnd,pathJStart)) {
-        data[i].path = data[i].path.concat(data[j].path);
-        data[i].died = data[j].died;
-        console.log(data[i].label + "->" + data[j].label);
-        remove.push(j);
-        // note that we don't break the loop here. we can keep extending a single path.
+      for (var i = 0; i < timesToHighlight.length; i++) {
+        var time = timesToHighlight[i];
+        timeUnderlay.append("rect")
+          .attr("x", time * timeLineDims.width / data.endFrame)
+          .attr("y", 0)
+          .attr("width", timeLineDims.width / data.endFrame)
+          .attr("height", timeLineDims.height)
+          .style("fill", "#F00");
       }
-    }
-  }
-  console.log("removing these after splicing: " + remove);
-  data = removeIdxsFromArray(remove, data);
-  remove.length = 0;
 
-  return data;
-}
-
-function filterShortLife(data) {
-  var remove = [];
-
-  // pull out all the really short ones... we measure "short" in frames; at 32 per second, short ain't so short.
-  var shortLife = 32*6;
-  // we could have done this alongside the other thing (at the end of each extending loop), but... that's just confusing to read.
-  for(var i=0; i < data.length; i++) {
-    var lifeLength = data[i].died - data[i].born;
-    if (lifeLength <= shortLife) {
-      remove.push(i);
-      console.log(i + "(" + data[i].label + "):life X\t" + lifeLength);
-    } else {
-      console.log(i + "(" + data[i].label + "):life \t\t\t\t\tO\t" + lifeLength);
-    }
-  }
-  console.log("removing these after short life filtering: " + remove);
-  data = removeIdxsFromArray(remove, data);
-  remove.length = 0;
-
-  return data;
-}
-
-function filterSmallMotion(data) {
-  var remove = [];
-
-  // now pull out the things that don't move much over the course of their life.
-  var sensibleLength = 400.0; // pixels
-  for(var i=0; i < data.length; i++) {
-    var lengthOfLine = lineLength(data[i].path);
-    if (lengthOfLine < sensibleLength) {
-      console.log(i + "(" + data[i].label + "):length X\t" + lengthOfLine);
-      remove.push(i);
-    } else {
-      console.log(i + "(" + data[i].label + "):length\t\t\t\t\tO\t" + lengthOfLine);
-    }
-  }
-  console.log("removing these after short travel filtering: " + remove);
-  data = removeIdxsFromArray(remove, data);
-  remove.length = 0;
-
-  return data;
-}
-
-function filterData(data) {
-  // TODO: this doesn't take into account the phenomenon of "2-1-2", where players' blobs can get joined together and then separate
-
-  data = stringTogether(data);
-  data = filterShortLife(data);
-  data = filterSmallMotion(data);
-
-  return data;
+  });
 }
