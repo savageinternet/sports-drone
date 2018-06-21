@@ -1,4 +1,4 @@
-var margin = {top: 19.5, right: 19.5, bottom: 19.5, left: 39.5},
+var margin = {top: 20, right: 20, bottom: 20, left: 40},
     width = 960 - margin.right,
     height = 540 - margin.top - margin.bottom;
 
@@ -21,7 +21,7 @@ d3.json('/data.json')
 
 
 function frameToTime(frame) {
-  var framesPerSec = 32, secPerMin = 60, minPerHour = 60;
+  var framesPerSec = 25, secPerMin = 60, minPerHour = 60;
   var framesPerMin = framesPerSec*secPerMin,
       framesPerHour = framesPerMin*minPerHour;
   var hh = Math.floor(frame/framesPerHour);
@@ -33,8 +33,22 @@ function frameToTime(frame) {
   return `${d3.format("0>2")(hh)}:${d3.format("0>2")(mm)}:${d3.format("0>2")(ss)}.${d3.format("0>2")(frame)}`;
 }
 
+function durationToTime(duration) {
+  var framesPerSec = 25;
+  var secPerMin = 60, minPerHour = 60, secPerHour = secPerMin*minPerHour;
+  var hh = Math.floor(duration/secPerHour);
+  duration = duration - hh*secPerHour;
+  var mm = Math.floor(duration/secPerMin);
+  duration = duration - mm*secPerMin;
+  var ss = Math.floor(duration);
+  var frame = Math.ceil((duration-ss)*framesPerSec);
+  return `${d3.format("0>2")(hh)}:${d3.format("0>2")(mm)}:${d3.format("0>2")(ss)}.${d3.format("0>2")(frame)}`
+}
+
 function fixScale(data) {
-  d3.select("#max-time").html(frameToTime(data.endFrame));
+  var vid = d3.select("#soccervid")._groups[0][0];
+  d3.select("#max-time").html(durationToTime(vid.duration));
+
   d3.select("#slider-time").attr("max", data.endFrame);
 }
 
@@ -91,7 +105,7 @@ function doDrawing(data) {
     .range([0, width])
     .domain([0, data['width']]);
   var y = d3.scaleLinear()
-    .range([0, height])
+    .range([height, 0])
     .domain([data['height'], 0]);
   function color(d) { return "rgb(" + d.color.r + "," + d.color.g + "," + d.color.b + ")"; };
   function opacity(d, frame) {
@@ -162,6 +176,12 @@ function doDrawing(data) {
         .call(positionFade);
     text.data(interpolateData(frame), key)
         .call(positionText);
+    var vid = d3.select("#soccervid")._groups[0][0];
+    vid.play()
+      .then(function() {
+        vid.currentTime = (frame-1)/d3.select("#slider-time").attr("max")*vid.duration;
+        vid.pause();
+      });
   }
 
   function positionFade(obj) {
@@ -259,7 +279,7 @@ function filterShortLife(data) {
   var remove = [];
 
   // pull out all the really short ones... we measure "short" in frames; at 32 per second, short ain't so short.
-  var shortLife = 32*3;
+  var shortLife = 32*6;
   // we could have done this alongside the other thing (at the end of each extending loop), but... that's just confusing to read.
   for(var i=0; i < data.length; i++) {
     var lifeLength = data[i].died - data[i].born;
@@ -281,7 +301,7 @@ function filterSmallMotion(data) {
   var remove = [];
 
   // now pull out the things that don't move much over the course of their life.
-  var sensibleLength = 100.0; // pixels
+  var sensibleLength = 400.0; // pixels
   for(var i=0; i < data.length; i++) {
     var lengthOfLine = lineLength(data[i].path);
     if (lengthOfLine < sensibleLength) {
