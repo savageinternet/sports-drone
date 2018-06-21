@@ -18,7 +18,7 @@ class ShoulderCodec {
 private:
     static int parity(int n);
 public:
-    static const int NUM_DATA_BITS = 6;
+    static const int NUM_DATA_BITS = 8;
     static const int VALUE_MIN = 0;
     static const int VALUE_MAX = 1 << NUM_DATA_BITS;
     

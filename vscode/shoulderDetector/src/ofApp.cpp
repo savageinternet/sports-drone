@@ -50,7 +50,8 @@ void ofApp::update(){
 //--------------------------------------------------------------
 void ofApp::draw(){
     if (image.isAllocated()) {
-        image.draw(0, 0);
+        //image.draw(0, 0);
+        imageBinary.draw(0, 0);
         if (ranImageDetection) {
             ofSetColor(255, 0, 0);
             contour.draw();
@@ -150,5 +151,18 @@ void ofApp::onClickLoadImage() {
     theta = thetaDeg / 180.0 * M_PI;
 
     image.load(openFileResult.getPath());
+
+    // threshold into binary image
+
+    convertColor(image, imageBinary, CV_RGB2GRAY);
+    Mat imageBinaryMat = toCv(imageBinary);
+    adaptiveThreshold(imageBinaryMat, imageBinaryMat, 255, ADAPTIVE_THRESH_GAUSSIAN_C, THRESH_BINARY_INV, 13, 8);
+    imageBinary.update();
+    dilate(imageBinary, 1);
+    /*
+    GaussianBlur(imageBinary, 3);
+    Canny(imageBinary, imageBinary, 10, 100);
+    */
+    imageBinary.update();
     ranImageDetection = false;
 }

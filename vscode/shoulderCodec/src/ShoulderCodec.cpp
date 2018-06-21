@@ -43,24 +43,24 @@ void ShoulderCodec::encode(int n, bitset<16>& code) const {
      * simplicity, we do not reorder the bits into their display order.  This
      * makes the math easier and avoids unnecessary copying.
      */
-    const int bL = b[0] | (b[2] << 1) | (b[5] << 3);
+    const int bL = b[0] | (b[3] << 1) | (b[4] << 2) | (b[7] << 3);
     code.set(i++, parity(bL & 0xb));
     code.set(i++, parity(bL & 0xd));
     code.set(i++, b[0]);
     code.set(i++, parity(bL & 0xe));
-    code.set(i++, b[2]);
-    code.set(i++, 0);
-    code.set(i++, b[5]);
+    code.set(i++, b[3]);
+    code.set(i++, b[4]);
+    code.set(i++, b[7]);
     code.set(i++, parity(bL & 0x7));
     
-    const int bR = b[1] | (b[3] << 1) | (1 << 2) | (b[4] << 3);
+    const int bR = b[1] | (b[2] << 1) | (b[5] << 2) | (b[6] << 3);
     code.set(i++, parity(bR & 0xb));
     code.set(i++, parity(bR & 0xd));
     code.set(i++, b[1]);
     code.set(i++, parity(bR & 0xe));
-    code.set(i++, b[3]);
-    code.set(i++, 1);
-    code.set(i++, b[4]);
+    code.set(i++, b[2]);
+    code.set(i++, b[5]);
+    code.set(i++, b[6]);
     code.set(i++, parity(bR & 0x7));
 }
 
@@ -105,12 +105,12 @@ int ShoulderCodec::decode(bitset<16>& code) const {
         }
     }
     
-    return code[2] | (code[10] << 1) | (code[4] << 2) | (code[12] << 3) | (code[14] << 4) | (code[6] << 5);
+    return code[2] | (code[10] << 1) | (code[12] << 2) | (code[4] << 3) |
+           (code[5] << 4) | (code[13] << 5) | (code[14] << 6) | (code[6] << 7);
 }
 
 ostream& ShoulderCodec::print(ostream& os, const bitset<16>& code) const {
     os <<
-        '1' <<
         (code[4] ? '1' : '0') <<
         (code[5] ? '1' : '0') <<
         (code[6] ? '1' : '0') <<
@@ -120,7 +120,7 @@ ostream& ShoulderCodec::print(ostream& os, const bitset<16>& code) const {
         (code[10] ? '1' : '0') <<
         (code[9] ? '1' : '0') <<
         (code[8] ? '1' : '0') <<
-        "1\n1" <<
+        "\n1010 1010\n" <<
         (code[0] ? '1' : '0') <<
         (code[1] ? '1' : '0') <<
         (code[2] ? '1' : '0') <<
@@ -130,6 +130,6 @@ ostream& ShoulderCodec::print(ostream& os, const bitset<16>& code) const {
         (code[14] ? '1' : '0') <<
         (code[13] ? '1' : '0') <<
         (code[12] ? '1' : '0') <<
-        "1\n";
+        "\n";
     return os;
 }

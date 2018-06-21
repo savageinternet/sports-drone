@@ -92,19 +92,19 @@ void ofApp::ofDrawShoulderCode() {
     ofRotateZDeg(dTheta);
     ofTranslate(dxUnits / 2.0f, -1, 0);
 
-    for (int i = 15; i >= 12; i--) {
-        ofSetColor(code[i] ? BLACK : WHITE);
-        float dx = i == 15 ? left : 0;
-        float w = i == 15 ? 1 - left : 1;
-        ofDrawRectangle(15 - i + dx, top, w, 1 - top);
-    }
-    ofSetColor(BLACK);
-    ofDrawRectangle(4, top, 1 - right, 1 - top);
     for (int i = 11; i >= 8; i--) {
         ofSetColor(code[i] ? BLACK : WHITE);
         float dx = i == 11 ? left : 0;
         float w = i == 11 ? 1 - left : 1;
-        ofDrawRectangle(11 - i + dx, 1, w, 1 - bottom);
+        ofDrawRectangle(11 - i + dx, top, w, 1 - top);
+    }
+    ofSetColor(BLACK);
+    ofDrawRectangle(4, top, 1 - right, 1 - top);
+    for (int i = 15; i >= 12; i--) {
+        ofSetColor(code[i] ? BLACK : WHITE);
+        float dx = i == 15 ? left : 0;
+        float w = i == 15 ? 1 - left : 1;
+        ofDrawRectangle(15 - i + dx, 1, w, 1 - bottom);
     }
     ofSetColor(BLACK);
     ofDrawRectangle(4, 1, 1 - right, 1 - bottom);
@@ -130,7 +130,8 @@ string ofApp::getCurrentImageFilePath() {
         "n" << n << "_" <<
         "x" << x0 << "_" <<
         "y" << y0 << "_" <<
-        "r" << theta << OUTPUT_EXT;
+        "r" << theta << "_" <<
+        "s" << size << OUTPUT_EXT;
     return ofFilePath::join(outputDir, filename.str());
 }
 

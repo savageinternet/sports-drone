@@ -23,7 +23,7 @@ SCENARIO("ShoulderCodecTest", "[ShoulderCodecTest]" ) {
         
         WHEN("we encode each valid number into the bitset, then decode") {
             THEN("we get the same number back") {
-                for (int i = 0; i < 64; i++) {
+                for (int i = 0; i < ShoulderCodec::VALUE_MAX; i++) {
                     codec.encode(i, code);
                     REQUIRE(codec.decode(code) == i);
                 }
@@ -32,7 +32,7 @@ SCENARIO("ShoulderCodecTest", "[ShoulderCodecTest]" ) {
         
         WHEN("we decode codes with a single error") {
             THEN("the error is corrected properly") {
-                for (int i = 0; i < 64; i++) {
+                for (int i = 0; i < ShoulderCodec::VALUE_MAX; i++) {
                     for (int j = 0; j < 16; j++) {
                         codec.encode(i, code);
                         code.flip(j);
@@ -45,7 +45,7 @@ SCENARIO("ShoulderCodecTest", "[ShoulderCodecTest]" ) {
         WHEN("we decode codes with a single error in each shoulder") {
             srand(static_cast<unsigned int>(time(NULL)));
             THEN("the error is corrected properly") {
-                for (int i = 0; i < 64; i++) {
+                for (int i = 0; i < ShoulderCodec::VALUE_MAX; i++) {
                     codec.encode(i, code);
                     int j = rand() % 8;
                     int k = rand() % 8 + 8;
@@ -59,7 +59,7 @@ SCENARIO("ShoulderCodecTest", "[ShoulderCodecTest]" ) {
         WHEN("we decode codes with two errors in the left shoulder") {
             srand(static_cast<unsigned int>(time(NULL)));
             THEN("decode() returns -1") {
-                for (int i = 0; i < 64; i++) {
+                for (int i = 0; i < ShoulderCodec::VALUE_MAX; i++) {
                     codec.encode(i, code);
                     int j = rand() % 8;
                     int k;
@@ -76,7 +76,7 @@ SCENARIO("ShoulderCodecTest", "[ShoulderCodecTest]" ) {
         WHEN("we decode codes with two errors in the right shoulder") {
             srand(static_cast<unsigned int>(time(NULL)));
             THEN("decode() returns -1") {
-                for (int i = 0; i < 64; i++) {
+                for (int i = 0; i < ShoulderCodec::VALUE_MAX; i++) {
                     codec.encode(i, code);
                     int j = rand() % 8 + 8;
                     int k;
