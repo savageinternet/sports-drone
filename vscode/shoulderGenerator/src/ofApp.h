@@ -20,13 +20,17 @@ private:
     static const string OUTPUT_EXT;
 
     ofImage background;
+    ofImage noise;
     bitset<16> code;
+    bitset<24> codeFormatted;
     ShoulderCodec codec;
     string projectRoot;
 
     ofxPanel gui;
 
     ofParameterGroup codeParameters;
+    ofParameter<bool> showBg;
+    ofParameter<bool> addNoise;
     ofParameter<int> n;
     ofParameter<int> x0;
     ofParameter<int> y0;
@@ -41,7 +45,9 @@ private:
 
     ofxButton btnRandomizeParameters;
 
+    void ofSetupNoise();
     void ofDrawShoulderCode();
+    void ofDrawNoise();
     string getCurrentImageFilePath();
     void saveCurrentImage();
 public:

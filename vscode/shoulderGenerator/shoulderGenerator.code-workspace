@@ -16,5 +16,15 @@
 			"path": "../shoulderCodec/test"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"files.associations": {
+			"iosfwd": "cpp",
+			"ios": "cpp",
+			"queue": "cpp",
+			"stack": "cpp",
+			"__locale": "cpp",
+			"memory": "cpp",
+			"vector": "cpp"
+		}
+	}
 }
