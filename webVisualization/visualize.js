@@ -91,12 +91,21 @@ function drawField(fieldType, dims) {
   // this draws a fakey soccer field for nowwww
   var fieldLayer = svg.append("g")
       .attr("class", "field");
+  // layer for visibility
+  fieldLayer.append("rect")
+      .attr("x", 0)
+      .attr("y", 0)
+      .attr("width", width)
+      .attr("height", height)
+      .style("stroke-width", 0)
+      .attr("fill", "#8BA870");
+  // field outline
   fieldLayer.append("rect")
       .attr("x", 5)
       .attr("y", 5)
       .attr("width", width-10)
       .attr("height", height-10)
-      .style("stroke", "#aaa")
+      .style("stroke", "#DDD")
       .style("stroke-width", 3)
       .attr("fill", "none");
   // goalie boxes
@@ -105,7 +114,7 @@ function drawField(fieldType, dims) {
       .attr("y", (height-300)/2+5)
       .attr("width", 200)
       .attr("height", 300)
-      .style("stroke", "#aaa")
+      .style("stroke", "#DDD")
       .style("stroke-width", 3)
       .attr("fill", "none");
   fieldLayer.append("rect")
@@ -113,7 +122,7 @@ function drawField(fieldType, dims) {
       .attr("y", (height-300)/2+5)
       .attr("width", 200)
       .attr("height", 300)
-      .style("stroke", "#aaa")
+      .style("stroke", "#DDD")
       .style("stroke-width", 3)
       .attr("fill", "none");
   // half
@@ -122,7 +131,7 @@ function drawField(fieldType, dims) {
       .attr("y", 5)
       .attr("width", (width-10)/2)
       .attr("height", height-10)
-      .style("stroke", "#aaa")
+      .style("stroke", "#DDD")
       .style("stroke-width", 3)
       .attr("fill", "none");
 }
