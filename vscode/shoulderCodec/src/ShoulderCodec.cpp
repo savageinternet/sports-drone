@@ -64,6 +64,52 @@ void ShoulderCodec::encode(int n, bitset<16>& code) const {
     code.set(i++, parity(bR & 0x7));
 }
 
+void ShoulderCodec::format(const bitset<16>& code, bitset<24>& codeFormatted) const {
+    codeFormatted.reset();
+    int i = 0;
+    // left shoulder
+    for (int j = 4; j < 8; j++) {
+        codeFormatted.set(i++, code[j]);
+    }
+    for (int j = 0; j < 4; j++) {
+        codeFormatted.set(i++, j % 2 == 0);
+    }
+    for (int j = 0; j < 4; j++) {
+        codeFormatted.set(i++, code[j]);
+    }
+    // right shoulder
+    for (int j = 11; j >= 8; j--) {
+        codeFormatted.set(i++, code[j]);
+    }
+    for (int j = 0; j < 4; j++) {
+        codeFormatted.set(i++, j % 2 == 0);
+    }
+    for (int j = 15; j >= 12; j--) {
+        codeFormatted.set(i++, code[j]);
+    }
+}
+
+void ShoulderCodec::unformat(const bitset<24>& codeFormatted, bitset<16>& code) const {
+    code.reset();
+    int i = 0;
+    // left shoulder
+    for (int j = 4; j < 8; j++) {
+        code.set(j, codeFormatted[i++]);
+    }
+    i += 4;
+    for (int j = 0; j < 4; j++) {
+        code.set(j, codeFormatted[i++]);
+    }
+    // right shoulder
+    for (int j = 11; j >= 8; j--) {
+        code.set(j, codeFormatted[i++]);
+    }
+    i += 4;
+    for (int j = 15; j >= 12; j--) {
+        code.set(j, codeFormatted[i++]);
+    }
+}
+
 int ShoulderCodec::decode(bitset<16>& code) const {
     /*
      * Split the code into left and right parts, in preparation for
@@ -107,29 +153,4 @@ int ShoulderCodec::decode(bitset<16>& code) const {
     
     return code[2] | (code[10] << 1) | (code[12] << 2) | (code[4] << 3) |
            (code[5] << 4) | (code[13] << 5) | (code[14] << 6) | (code[6] << 7);
-}
-
-ostream& ShoulderCodec::print(ostream& os, const bitset<16>& code) const {
-    os <<
-        (code[4] ? '1' : '0') <<
-        (code[5] ? '1' : '0') <<
-        (code[6] ? '1' : '0') <<
-        (code[7] ? '1' : '0') <<
-        ' ' <<
-        (code[11] ? '1' : '0') <<
-        (code[10] ? '1' : '0') <<
-        (code[9] ? '1' : '0') <<
-        (code[8] ? '1' : '0') <<
-        "\n1010 1010\n" <<
-        (code[0] ? '1' : '0') <<
-        (code[1] ? '1' : '0') <<
-        (code[2] ? '1' : '0') <<
-        (code[3] ? '1' : '0') <<
-        ' ' <<
-        (code[15] ? '1' : '0') <<
-        (code[14] ? '1' : '0') <<
-        (code[13] ? '1' : '0') <<
-        (code[12] ? '1' : '0') <<
-        "\n";
-    return os;
 }

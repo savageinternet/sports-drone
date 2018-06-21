@@ -8,7 +8,15 @@
 		"files.associations": {
 			"bitset": "cpp",
 			"system_error": "cpp",
-			"__bit_reference": "cpp"
+			"__bit_reference": "cpp",
+			"iosfwd": "cpp",
+			"memory": "cpp",
+			"ios": "cpp",
+			"__functional_base": "cpp",
+			"istream": "cpp",
+			"locale": "cpp",
+			"tuple": "cpp",
+			"utility": "cpp"
 		}
 	}
 }

@@ -20,11 +20,23 @@ SCENARIO("ShoulderCodecTest", "[ShoulderCodecTest]" ) {
     GIVEN("A ShoulderCodec instance and bitset of size 16") {
         ShoulderCodec codec;
         bitset<16> code;
+        bitset<24> codeFormatted;
         
         WHEN("we encode each valid number into the bitset, then decode") {
             THEN("we get the same number back") {
                 for (int i = 0; i < ShoulderCodec::VALUE_MAX; i++) {
                     codec.encode(i, code);
+                    REQUIRE(codec.decode(code) == i);
+                }
+            }
+        }
+
+        WHEN("we encode each valid number into the bitset, then format, then unformat, then decode") {
+            THEN("we get the same number back") {
+                for (int i = 0; i < ShoulderCodec::VALUE_MAX; i++) {
+                    codec.encode(i, code);
+                    codec.format(code, codeFormatted);
+                    codec.unformat(codeFormatted, code);
                     REQUIRE(codec.decode(code) == i);
                 }
             }
