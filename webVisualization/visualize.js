@@ -21,10 +21,10 @@ var timeUnderlay = d3.select('#underlay')
 var vid = d3.select("#soccervid")._groups[0][0];
 
 //d3.json('/data.json')
-d3.json('/data-smallest.json')
+d3.json('/data.json')
   .then(function(data) {
     var mData = JSON.parse(JSON.stringify(data));
-    //data.tracked = filterData(data.tracked);
+    data.tracked = filterData(data.tracked);
     fixScale(data);
     clearDrawing(svg);
     clearDrawing(timeUnderlay);
