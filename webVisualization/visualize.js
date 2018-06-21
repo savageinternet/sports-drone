@@ -89,7 +89,9 @@ function drawField(fieldType, dims) {
   // TODO want to get this info from the video. need to know field type, and have a dims with {min,max}{x,y}.
 
   // this draws a fakey soccer field for nowwww
-  svg.append("rect")
+  var fieldLayer = svg.append("g")
+      .attr("class", "field");
+  fieldLayer.append("rect")
       .attr("x", 5)
       .attr("y", 5)
       .attr("width", width-10)
@@ -98,7 +100,7 @@ function drawField(fieldType, dims) {
       .style("stroke-width", 3)
       .attr("fill", "none");
   // goalie boxes
-  svg.append("rect")
+  fieldLayer.append("rect")
       .attr("x", 5)
       .attr("y", (height-300)/2+5)
       .attr("width", 200)
@@ -106,7 +108,7 @@ function drawField(fieldType, dims) {
       .style("stroke", "#aaa")
       .style("stroke-width", 3)
       .attr("fill", "none");
-  svg.append("rect")
+  fieldLayer.append("rect")
       .attr("x", width-5-200)
       .attr("y", (height-300)/2+5)
       .attr("width", 200)
@@ -115,7 +117,7 @@ function drawField(fieldType, dims) {
       .style("stroke-width", 3)
       .attr("fill", "none");
   // half
-  svg.append("rect")
+  fieldLayer.append("rect")
       .attr("x", 5)
       .attr("y", 5)
       .attr("width", (width-10)/2)
@@ -161,6 +163,9 @@ function doDrawing(data) {
       displayTime(parseInt(this.value));
     });
 
+  var interactionUnderlay = svg.append('g')
+      .attr("class", "interaction");
+
   var dot = svg.append("g")
       .attr("class", "dots")
       .selectAll(".dot")
@@ -183,6 +188,9 @@ function doDrawing(data) {
         .attr("text-anchor", "middle")
         .text(function(d) { return key(d); })
         .call(positionText);
+
+  var paths = svg.append("g")
+      .attr("class", "paths");
 
   // Interpolates the dataset for the given frame.
   function interpolateData(frame) {
@@ -236,7 +244,7 @@ function doDrawing(data) {
   }
 
   // draw a line for each labelled thingy
-  var linez = svg.selectAll("path").data(data.tracked);
+  var linez = paths.selectAll("path").data(data.tracked);
   var line = d3.line()
     .x(function(d) { return x(d.x); })
     .y(function(d) { return y(d.y); })
@@ -265,7 +273,10 @@ function doDrawing(data) {
       var x = mouse[0];
       var y = mouse[1];
       var r = 20;
-      svg
+
+      clearDrawing(interactionUnderlay);
+
+      interactionUnderlay
           .append("circle")
           .attr("cx", mouse[0])
           .attr("cy", mouse[1])
