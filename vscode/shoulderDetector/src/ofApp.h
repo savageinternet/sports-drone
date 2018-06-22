@@ -32,6 +32,7 @@ private:
     int x0;
     int y0;
     float theta;
+    int size;
 
     ofxPanel gui;
     ofxButton btnLoadImage;

@@ -34,10 +34,11 @@ void ofApp::update(){
         return;
     }
     contour.clear();
-    contour.addVertex(x0 - 100, y0 - 100);
-    contour.addVertex(x0 + 100, y0 - 100);
-    contour.addVertex(x0 + 100, y0 + 100);
-    contour.addVertex(x0 - 100, y0 + 100);
+    int ds = size * 6;
+    contour.addVertex(x0 - ds, y0 - ds);
+    contour.addVertex(x0 + ds, y0 - ds);
+    contour.addVertex(x0 + ds, y0 + ds);
+    contour.addVertex(x0 - ds, y0 + ds);
     contour.close();
     /*
     detector.detect(
@@ -87,6 +88,14 @@ bool contourIntersection(const vector<Point2f>& contour, Point2f o, float theta,
     return rayIntersection(p1, p2, o, theta, out);
 }
 
+template<typename T> void printVector(vector<T> v) {
+    cout << "[";
+    for (int i = 0; i < v.size() ; i++ ) {
+        cout << v.at(i) << ",";
+    }
+    cout << "]";
+}
+
 void ofDrawDetect(
         const ofPixels& pixels,
         const ofPolyline& ofContour,
@@ -110,13 +119,53 @@ void ofDrawDetect(
         }
         LineIterator it(mat, p1, p2);
         int n = it.count;
-        //vector<unsigned char> vs(n);
+        vector<Point2f> ps;
+        vector<uchar> vs;
         for (int i = 0; i < n; i++, ++it) {
-            //unsigned char v = mat.at(it.pos());
             Point2f p = it.pos();
+            uchar v = mat.at<uchar>(p);
+            ps.push_back(p);
+            vs.push_back(v);
+
+            /*
+            ofSetColor(ofColor(v, 0, 0xff - v));
             ofDrawRectangle(p.x, p.y, 1, 1);
-            //vs.push_back(v);
+            */
         }
+
+        ofSetColor(ofColor(255, 0, 0));
+        float threshold = 127;
+        float alpha = 0.3;
+        bool inTransition = false;
+        vector<int> transitions;
+        vector<float> transitionStrength;
+        int muStart = 0;
+        for (int i = 0; i < 4; i++) {
+            muStart += vs[i];
+        }
+        float mu = muStart / 4;
+        for (int i = 4; i < n; i++) {
+            float dv = vs[i] - mu;
+            mu += alpha * dv;
+            dv = abs(dv);
+            if (dv >= threshold) {
+                if (!inTransition) {
+                    transitions.push_back(i);
+                    transitionStrength.push_back(dv);
+                }
+                inTransition = true;
+                
+                Point2f p = ps[i];
+                ofDrawRectangle(p.x, p.y, 1, 1);
+            } else {
+                inTransition = false;
+            }
+        }
+        cout << theta << ": ";
+        printVector(transitions);
+        cout << ", strength = ";
+        printVector(transitionStrength);
+        cout << endl;
     }
 }
 
@@ -127,13 +176,12 @@ void ofApp::draw(){
         if (ranImageDetection) {
             ofSetColor(255, 0, 0);
             contour.draw();
+
+            ofDrawDetect(imageGrey.getPixels(), contour, code);
             
             ofSetColor(0, 255, 0);
             ofDrawLine(x0 + 20 * cos(theta), y0 + 20 * sin(theta), x0 - 20 * cos(theta), y0 - 20 * sin(theta));
             ofDrawLine(x0, y0, x0 + 10 * sin(theta), y0 - 10 * cos(theta));
-
-            ofSetColor(0, 255, 255);
-            ofDrawDetect(image.getPixels(), contour, code);
 
             ofSetColor(WHITE);
         }
@@ -220,6 +268,8 @@ void ofApp::onClickLoadImage() {
     part = parts[4].c_str();
     int thetaDeg = atoi(part + 1);
     theta = thetaDeg / 180.0 * M_PI;
+    part = parts[5].c_str();
+    size = atoi(part + 1);
 
     image.load(openFileResult.getPath());
     image.update();
