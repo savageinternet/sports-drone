@@ -36,7 +36,25 @@
 			"tuple": "cpp",
 			"utility": "cpp",
 			"stdexcept": "cpp",
-			"bitset": "cpp"
+			"bitset": "cpp",
+			"__functional_03": "cpp",
+			"functional": "cpp",
+			"chrono": "cpp",
+			"map": "cpp",
+			"set": "cpp",
+			"unordered_map": "cpp",
+			"__config": "cpp",
+			"__nullptr": "cpp",
+			"cstddef": "cpp",
+			"exception": "cpp",
+			"initializer_list": "cpp",
+			"type_traits": "cpp",
+			"typeinfo": "cpp",
+			"algorithm": "cpp",
+			"filesystem": "cpp",
+			"iterator": "cpp",
+			"regex": "cpp",
+			"system_error": "cpp"
 		}
 	}
 }

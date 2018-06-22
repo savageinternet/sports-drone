@@ -24,7 +24,7 @@ private:
     ofPolyline contour;
     ShoulderDetector detector;
     ofImage image;
-    ofImage imageBinary;
+    ofImage imageGrey;
     string projectRoot;
     bool ranImageDetection;
 
