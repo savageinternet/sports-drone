@@ -20,6 +20,28 @@ void Glow::update(const Player& track) {
     smooth.interpolate(cur, .5);
     all.addVertex(cur.x, cur.y);
     
+    if (color.getHue() < 20 && track.jerseyColor.getHue() > 230) {
+        // gotta wrap the average.
+        float currDiffToZero = color.getHue();
+        float newDiffToZero = track.jerseyColor.getHue()-255;
+        float avgDiff = (currDiffToZero + newDiffToZero) / 2.;
+        if (avgDiff > 0)
+            color.setHue(avgDiff);
+        else
+            color.setHue(avgDiff + 255);
+    } else if (color.getHue() > 230 && track.jerseyColor.getHue() < 20) {
+        // gotta wrap the average.
+        float currDiffToZero = color.getHue()-255;
+        float newDiffToZero = track.jerseyColor.getHue();
+        float avgDiff = (currDiffToZero + newDiffToZero) / 2.;
+        if (avgDiff > 0)
+            color.setHue(avgDiff);
+        else
+            color.setHue(avgDiff + 255);
+    } else {
+        color.setHue((color.getHue()+track.jerseyColor.getHue())/2);
+    }
+    
     timepoint now;
     now.x = cur.x;
     now.y = cur.y;
@@ -153,8 +175,8 @@ void ofApp::setup() {
     sportParameters.setName("Sport Infoz");
     sportParameters.add(numberPlayers.set("Num Players:",10,0,22));
     sportParameters.add(sportEnumChooser.set("Sport:",0,0,2));
-    sportParameters.add(team1Color.set("Team 1 Color",ofColor(249,161,54),ofColor(0,0),ofColor(255)));
-    sportParameters.add(team2Color.set("Team 2 Color",ofColor(255,253,145),ofColor(0,0),ofColor(255)));
+    sportParameters.add(team1Color.set("Team 1 Color",ofColor(249,85,29),ofColor(0,0),ofColor(255)));
+    sportParameters.add(team2Color.set("Team 2 Color",ofColor(255,231,57),ofColor(0,0),ofColor(255)));
     sportParameters.add(recordRunthrough.set("Record full run-through",false));
     gui.setup(sportParameters);
     
@@ -252,7 +274,6 @@ void ofApp::update() {
             contourFinder.findContours(fgMask);
         }
         
-        //NOTE from VALKYRIE : under construction :3
         // this section basically takes the rectangles from the contourfinder and turns them into "players", where we can have mo' info.
         std::vector<Player> foundPlayers;
         int w = colorFrameBlurred.getWidth();
@@ -290,8 +311,6 @@ void ofApp::update() {
             foundPlayers.push_back(p);
         }
         tracker.track(foundPlayers);
-        
-        curFrame++;
     }
 }
 
@@ -341,7 +360,7 @@ void ofApp::filterColorToMask(ofColor teamColor, cv::Mat& colorFilterMat) {
 
 int ofApp::ofColortoCVHue(int hue) {
     // openframeworks uses hues 0-255, and opencv uses hues 0-180
-    return hue * 180.0/255.0;
+    return hue * 255.0/180.0;
 }
 
 void ofApp::clampHSB(int& hue, int& saturation, int& brightness) {
@@ -427,6 +446,10 @@ void ofApp::draw() {
         }
     }
     
+    // I don't like it much, but we have to put this incrementer here rather than in update() because otherwise we have already upped the frame count
+    // before we assign born / died frames in this piece of code. ugh, architecture.
+    curFrame++;
+    
     // this is all we have to do to draw the GUI???? :D :D :D
     processingGui.draw();
     gui.draw();
@@ -454,6 +477,13 @@ void ofApp::recordRunthroughPressed(bool& recordB) {
         j["width"] = movie.getWidth();
         j["height"] = movie.getHeight();
         j["sport"] = videoDetails.getNameString();
+        j["framerate"] = movie.getDuration() / movie.getTotalNumFrames();
+        j["team1color"]["r"] = team1Color.get().r;
+        j["team1color"]["g"] = team1Color.get().g;
+        j["team1color"]["b"] = team1Color.get().b;
+        j["team2color"]["r"] = team2Color.get().r;
+        j["team2color"]["g"] = team2Color.get().g;
+        j["team2color"]["b"] = team2Color.get().b;
         // next we do a sketchy thing, where we mostly dump the string into the file, but go a lil bit lel and remove the last character. this makes it so we don't screw up our file and break the json that leads into all the tracked thingies.
         recordingFile << j.dump().erase(j.dump().length()-1, 1) << ", \"tracked\":[\n";
         movie.setLoopState(OF_LOOP_NONE);
@@ -463,7 +493,7 @@ void ofApp::recordRunthroughPressed(bool& recordB) {
 }
 
 void ofApp::finalizeRecording() {
-    // wish we could get rid of the final comma in the file... but... not sure how to do :(
+    // wish we could get rid of the final comma in the file... but... not sure how to do programmatically w/o close and reopen and truncate.. :(
     recordingFile << "]}";
     movie.setLoopState(OF_LOOP_NORMAL);
     movie.play();

@@ -25,35 +25,51 @@ body {
   fill: #ddd;
 }
 
-circle.pointTrajectory {
-   pointer-events: none;
-   stroke: lightgray;
-   fill: black;
-   opacity: 0;
+.highlighted {
+  fill: red;
 }
 
-path.lineTrajectory {
-  stroke-width: 2;
-  stroke-opacity: .5;
-  stroke: black;
-  fill: none;
-  pointer-events: none;
+.slider-wrapper {
+  position: relative;
+  width: 783px;
+  display: inline-block;
 }
 
-.selected {
-  stroke-width: 4;
+#slider-time {
+  width: 783px;
+  margin: 0;
+  margin-top:10px;
+  padding: 0;
 }
+
+#underlay {
+  position: absolute;
+  height: 30px;
+  width: 100%;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  display: flex;
+}
+
   </style>
 </head>
 <body>
-  <script src="visualize.js"></script>
-  <div id="chart" style="margin:0px"></div>
-  <span id="min-time">00:00:00.01</span>
-    <input type="range" name="points" min="1" max="1500" step="1" value="1" id="slider-time" style="width:783px">
-  <span id="max-time">00:00:00.00</span>
+  <div id="chart-placeholder" style="margin:0px;"></div>
+  <div id="timeslider">
+    <span id="min-time">00:00:00.00</span>
+    <div class="slider-wrapper">
+      <div id="underlay"></div>
+      <input type="range" name="points" min="0" max="1500" step="1" value="0" id="slider-time">
+    </div>
+    <span id="max-time">00:00:00.00</span>
+  </div>
   <video width="940" height="500" playsinline id="soccervid" muted>
     <source src="soccer-cut.mp4" type="video/mp4">
   Your browser does not support the video tag.
   </video>
+  <script src="dataManipulate.js"></script>
+  <script src="geometry.js"></script>
+  <script src="visualize.js"></script>
 </body>
 </html>
