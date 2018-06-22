@@ -93,7 +93,7 @@ void ofApp::ofDrawShoulderCode() {
 
     ofPushMatrix();  // left shoulder
     ofRotateZDeg(-dTheta);
-    ofTranslate(-5.0f - dxUnits / 2.0f, -1, 0);
+    ofTranslate(-4.0f - dxUnits / 2.0f, -1.5, 0);
 
     for (int r = 0; r < 3; r++) {
         float y = r;
@@ -122,7 +122,7 @@ void ofApp::ofDrawShoulderCode() {
 
     ofPushMatrix();  // right shoulder
     ofRotateZDeg(dTheta);
-    ofTranslate(dxUnits / 2.0f, -1, 0);
+    ofTranslate(dxUnits / 2.0f, -1.5, 0);
 
     for (int r = 0; r < 3; r++) {
         float y = r;
