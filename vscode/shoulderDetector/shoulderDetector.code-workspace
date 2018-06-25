@@ -60,7 +60,9 @@
 			"__tree": "cpp",
 			"queue": "cpp",
 			"stack": "cpp",
-			"ostream": "cpp"
+			"ostream": "cpp",
+			"__bit_reference": "cpp",
+			"forward_list": "cpp"
 		}
 	}
 }

@@ -101,8 +101,14 @@ struct Transition {
     float strength;
 };
 struct Candidate {
-    float theta;
+    int theta;
     float score;
+    Point2f center;
+    float bitSize;
+};
+
+struct DetectedLocation {
+    float theta;
     Point2f center;
     float bitSize;
 };
@@ -117,6 +123,13 @@ ostream& operator<<(ostream& os, const Candidate& c) {
         ", score: " << c.score <<
         ", center: " << c.center <<
         ", bitSize: " << c.bitSize << "}";
+    return os;
+}
+
+ostream& operator<<(ostream& os, const DetectedLocation& dl) {
+    os << "{theta: " << dl.theta <<
+        ", center: " << dl.center <<
+        ", bitSize: " << dl.bitSize << "}";
     return os;
 }
 
@@ -153,7 +166,7 @@ float distance(const Point2f& p0, const Point2f& p1) {
     return sqrt(dx * dx + dy * dy);
 }
 
-Candidate getCandidate(const vector<Transition>& ts, float theta, float score, const vector<Point2f> ps, int i) {
+Candidate getCandidate(const vector<Transition>& ts, int theta, float score, const vector<Point2f> ps, int i) {
     Candidate c;
     c.theta = theta;
     c.score = score;
@@ -163,6 +176,75 @@ Candidate getCandidate(const vector<Transition>& ts, float theta, float score, c
     c.center = (ps[i0] + ps[i1] + ps[i2]) / 3;
     c.bitSize = (distance(ps[i0], ps[i1]) + distance(ps[i1], ps[i2])) / 2;
     return c;
+}
+
+Candidate averageCandidates(const vector<Candidate>& cs2x, int start, int end) {
+    float averageScore = 0.0;
+    int n = end - start + 1;
+    for (int i = start; i <= end; i++) {
+        averageScore += cs2x[i].score / n;
+    }
+
+    // compute average center, bitSize, filtering out anything with sub-average score MEDIOCRE
+    int goodCount = 0;
+    Candidate c;
+    c.theta = 0;
+    c.score = 0;
+    c.center = Point2f(0, 0);
+    c.bitSize = 0;
+    for (int i = start; i <= end; i++) {
+        if (cs2x[i].score < averageScore) {
+            continue;
+        }
+        goodCount++;
+        c.theta += cs2x[i].theta;
+        c.score += cs2x[i].score;
+        c.center += cs2x[i].center;
+        c.bitSize += cs2x[i].bitSize;
+    }
+    c.theta /= goodCount;
+    c.score /= goodCount;
+    c.center /= goodCount;
+    c.bitSize /= goodCount;
+    return c;
+}
+
+void groupCandidates(const vector<Candidate>& cs, vector<Candidate>& out) {
+    int n = cs.size();
+
+    /*
+     * To help in grouping candidates that cross the 0 / 360 edge, append a copy
+     * of our candidate vector to the end.
+     */
+    vector<Candidate> cs2x;
+    cs2x.insert(cs2x.end(), cs.begin(), cs.end());
+    cs2x.insert(cs2x.end(), cs.begin(), cs.end());
+
+    bool hasRun = false;
+    int cycleEnd = 2 * n;
+    int start = 0, end = 0, endTheta = cs2x[0].theta;
+    for (int i = 1; i < cycleEnd; i++) {
+        int theta = cs2x[i].theta;
+        if (theta != (endTheta + 5) % 360) {
+            if (hasRun) {
+                // record last run
+                Candidate c = averageCandidates(cs2x, start, end);
+                out.push_back(c);
+            } else {
+                hasRun = true;
+                cycleEnd = i + n;
+            }
+            // new run
+            start = i;
+        }
+        end = i;
+        endTheta = theta;
+    }
+    if (hasRun) {
+        // record last run
+        Candidate c = averageCandidates(cs2x, start, end);
+        out.push_back(c);
+    }
 }
 
 void ofDrawDetect(
@@ -229,16 +311,20 @@ void ofDrawDetect(
         if (i != -1) {
             Candidate c = getCandidate(transitions, theta, score, ps, i);
             candidates.push_back(c);
-
-            Point2f p = c.center;
-            ofSetColor(ofColor(255, 0, 0));
-            ofDrawRectangle(p.x - 1, p.y - 1, 3, 3);
         }
     }
 
-    // TODO: do something with candidates
-    printVector(candidates);
+    vector<Candidate> groupedCandidates;
+    groupCandidates(candidates, groupedCandidates);
+
+    printVector(groupedCandidates);
     cout << endl;
+
+    ofSetColor(ofColor(255, 0, 0));
+    for (int i = 0; i < groupedCandidates.size(); i++) {
+        Point2f p = groupedCandidates[i].center;
+        ofDrawRectangle(p.x - 1, p.y - 1, 3, 3);
+    }
 }
 
 //--------------------------------------------------------------
