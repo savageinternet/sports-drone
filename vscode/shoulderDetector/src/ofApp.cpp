@@ -96,6 +96,75 @@ template<typename T> void printVector(vector<T> v) {
     cout << "]";
 }
 
+struct Transition {
+    int index;
+    float strength;
+};
+struct Candidate {
+    float theta;
+    float score;
+    Point2f center;
+    float bitSize;
+};
+
+ostream& operator<<(ostream& os, const Transition& t) {
+    os << "(" << t.index << ", " << t.strength << ")";
+    return os;
+}
+
+ostream& operator<<(ostream& os, const Candidate& c) {
+    os << "{theta: " << c.theta <<
+        ", score: " << c.score <<
+        ", center: " << c.center <<
+        ", bitSize: " << c.bitSize << "}";
+    return os;
+}
+
+float scoreTransitions(const vector<Transition>& ts, int i) {
+    int di10 = ts[i + 1].index - ts[i].index;
+    int di21 = ts[i + 2].index - ts[i + 1].index;
+    int di = abs(di21 - di10);
+    float k = 10;
+    float s = ts[i].strength + ts[i + 1].strength + ts[i + 2].strength;
+    return s - k * di;
+}
+
+int findBestTransitions(const vector<Transition>& ts, float& score) {
+    int n = ts.size();
+    if (n < 3) {
+        return -1;
+    }
+    int bestIndex = -1;
+    float bestScore = 0;
+    for (int i = 0; i < n - 2; i++) {
+        float score = scoreTransitions(ts, i);
+        if (score > bestScore) {
+            bestIndex = i;
+            bestScore = score;
+        }
+    }
+    score = bestScore;
+    return bestIndex;
+}
+
+float distance(const Point2f& p0, const Point2f& p1) {
+    float dx = p1.x - p0.x;
+    float dy = p1.y - p0.y;
+    return sqrt(dx * dx + dy * dy);
+}
+
+Candidate getCandidate(const vector<Transition>& ts, float theta, float score, const vector<Point2f> ps, int i) {
+    Candidate c;
+    c.theta = theta;
+    c.score = score;
+    int i0 = ts[i].index;
+    int i1 = ts[i + 1].index;
+    int i2 = ts[i + 2].index;
+    c.center = (ps[i0] + ps[i1] + ps[i2]) / 3;
+    c.bitSize = (distance(ps[i0], ps[i1]) + distance(ps[i1], ps[i2])) / 2;
+    return c;
+}
+
 void ofDrawDetect(
         const ofPixels& pixels,
         const ofPolyline& ofContour,
@@ -111,6 +180,7 @@ void ofDrawDetect(
     /*
      * Cast multiple rays out from the centroid to the contour edges.
      */
+    vector<Candidate> candidates;
     for (int theta = 0; theta < 360; theta += 5) {
         float thetaRad = theta * M_PI / 180.0;
         if (!contourIntersection(contour, p1, thetaRad, p2)) {
@@ -126,19 +196,13 @@ void ofDrawDetect(
             uchar v = mat.at<uchar>(p);
             ps.push_back(p);
             vs.push_back(v);
-
-            /*
-            ofSetColor(ofColor(v, 0, 0xff - v));
-            ofDrawRectangle(p.x, p.y, 1, 1);
-            */
         }
 
         ofSetColor(ofColor(255, 0, 0));
         float threshold = 127;
         float alpha = 0.3;
         bool inTransition = false;
-        vector<int> transitions;
-        vector<float> transitionStrength;
+        vector<Transition> transitions;
         int muStart = 0;
         for (int i = 0; i < 4; i++) {
             muStart += vs[i];
@@ -150,23 +214,31 @@ void ofDrawDetect(
             dv = abs(dv);
             if (dv >= threshold) {
                 if (!inTransition) {
-                    transitions.push_back(i);
-                    transitionStrength.push_back(dv);
+                    Transition t;
+                    t.index = i;
+                    t.strength = dv;
+                    transitions.push_back(t);
                 }
                 inTransition = true;
-                
-                Point2f p = ps[i];
-                ofDrawRectangle(p.x, p.y, 1, 1);
             } else {
                 inTransition = false;
             }
         }
-        cout << theta << ": ";
-        printVector(transitions);
-        cout << ", strength = ";
-        printVector(transitionStrength);
-        cout << endl;
+        float score;
+        int i = findBestTransitions(transitions, score);
+        if (i != -1) {
+            Candidate c = getCandidate(transitions, theta, score, ps, i);
+            candidates.push_back(c);
+
+            Point2f p = c.center;
+            ofSetColor(ofColor(255, 0, 0));
+            ofDrawRectangle(p.x - 1, p.y - 1, 3, 3);
+        }
     }
+
+    // TODO: do something with candidates
+    printVector(candidates);
+    cout << endl;
 }
 
 //--------------------------------------------------------------
