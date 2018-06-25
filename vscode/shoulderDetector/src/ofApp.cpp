@@ -293,6 +293,48 @@ bool findBestCandidates(const vector<Candidate> cs, Candidate& c0, Candidate& c1
     return true;
 }
 
+bool readBit(const Mat& mat, const Point2f& p) {
+    uchar v = mat.at<uchar>(p);
+    return v <= 127;
+}
+
+void readBitLattice(const Mat& mat, const Candidate& c, bitset<12>& bs) {
+    // draw lattice to show off
+    float thetaRad = c.theta * M_PI / 180.0;
+    float cosTheta = cos(thetaRad);
+    float sinTheta = sin(thetaRad);
+    Point2f dCol(cosTheta, sinTheta);
+    Point2f dRow(sinTheta, -cosTheta);
+    for (int i = 0; i < 12; i++) {
+        int row = (i / 4) - 1;
+        float col = (i % 4) - 1.5;
+        Point2f p = c.center + c.bitSize * (col * dCol + row * dRow);
+        bool b = readBit(mat, p);
+        bs.set(i, b);
+    }
+}
+
+void buildFormattedCode(const bitset<12>& bs0, const bitset<12>& bs1, bitset<24>& codeFormatted) {
+    bool timing = bs0[4];
+    if (timing) {
+        // bs0 is right, bs1 is left: reverse bs1
+        for (int i = 0; i < 12; i++) {
+            codeFormatted.set(i, bs1[11 - i]);
+        }
+        for (int i = 0; i < 12; i++) {
+            codeFormatted.set(i + 12, bs0[i]);
+        }
+    } else {
+        // bs1 is right, bs0 is left: reverse bs0
+        for (int i = 0; i < 12; i++) {
+            codeFormatted.set(i, bs0[11 - i]);
+        }
+        for (int i = 0; i < 12; i++) {
+            codeFormatted.set(i + 12, bs1[i]);
+        }
+    }
+}
+
 void ofDrawDetect(
         const ofPixels& pixels,
         const ofPolyline& ofContour,
@@ -377,15 +419,35 @@ void ofDrawDetect(
     cout << endl;
 
     // sort candidates
+    ofSetColor(ofColor(0, 255, 0));
     Candidate c0, c1;
-    if (findBestCandidates(groupedCandidates, c0, c1)) {
-        cout << c0 << ", " << c1 << endl;
-        ofSetColor(ofColor(0, 255, 0));
-        Point2f p = c0.center;
-        ofDrawRectangle(p.x - 1, p.y - 1, 3, 3);
-        p = c1.center;
-        ofDrawRectangle(p.x - 1, p.y - 1, 3, 3);
+    if (!findBestCandidates(groupedCandidates, c0, c1)) {
+        return;
     }
+
+    cout << c0 << ", " << c1 << endl;
+    Point2f p = c0.center;
+    ofDrawRectangle(p.x - 1, p.y - 1, 3, 3);
+    p = c1.center;
+    ofDrawRectangle(p.x - 1, p.y - 1, 3, 3);
+
+    bitset<12> bs0;
+    readBitLattice(mat, c0, bs0);
+
+    bitset<12> bs1;
+    readBitLattice(mat, c1, bs1);
+    
+    bitset<24> codeFormatted;
+    buildFormattedCode(bs0, bs1, codeFormatted);
+
+    bitset<16> code;
+    ShoulderCodec codec;
+    codec.unformat(codeFormatted, code);
+    int result = codec.decode(code);
+
+    ostringstream ss;
+    ss << result << "!";
+    ofDrawBitmapStringHighlight(ss.str(), centroid.x, centroid.y);
 }
 
 //--------------------------------------------------------------
@@ -397,10 +459,6 @@ void ofApp::draw(){
             contour.draw();
 
             ofDrawDetect(imageGrey.getPixels(), contour, code);
-            
-            ofSetColor(0, 255, 0);
-            ofDrawLine(x0 + 20 * cos(theta), y0 + 20 * sin(theta), x0 - 20 * cos(theta), y0 - 20 * sin(theta));
-            ofDrawLine(x0, y0, x0 + 10 * sin(theta), y0 - 10 * cos(theta));
 
             ofSetColor(WHITE);
         }
