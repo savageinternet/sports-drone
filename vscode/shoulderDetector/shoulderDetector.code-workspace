@@ -62,7 +62,8 @@
 			"stack": "cpp",
 			"ostream": "cpp",
 			"__bit_reference": "cpp",
-			"forward_list": "cpp"
+			"forward_list": "cpp",
+			"__string": "cpp"
 		}
 	}
 }

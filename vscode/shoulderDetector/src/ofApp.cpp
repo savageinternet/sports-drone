@@ -107,12 +107,6 @@ struct Candidate {
     float bitSize;
 };
 
-struct DetectedLocation {
-    float theta;
-    Point2f center;
-    float bitSize;
-};
-
 ostream& operator<<(ostream& os, const Transition& t) {
     os << "(" << t.index << ", " << t.strength << ")";
     return os;
@@ -126,20 +120,13 @@ ostream& operator<<(ostream& os, const Candidate& c) {
     return os;
 }
 
-ostream& operator<<(ostream& os, const DetectedLocation& dl) {
-    os << "{theta: " << dl.theta <<
-        ", center: " << dl.center <<
-        ", bitSize: " << dl.bitSize << "}";
-    return os;
-}
-
 float scoreTransitions(const vector<Transition>& ts, int i) {
     int di10 = ts[i + 1].index - ts[i].index;
     int di21 = ts[i + 2].index - ts[i + 1].index;
     int di = abs(di21 - di10);
-    float k = 10;
+    float k = 20;
     float s = ts[i].strength + ts[i + 1].strength + ts[i + 2].strength;
-    return s - k * di;
+    return s - k * di * di;
 }
 
 int findBestTransitions(const vector<Transition>& ts, float& score) {
@@ -187,25 +174,29 @@ Candidate averageCandidates(const vector<Candidate>& cs2x, int start, int end) {
 
     // compute average center, bitSize, filtering out anything with sub-average score MEDIOCRE
     int goodCount = 0;
+    float goodScore = 0;
     Candidate c;
     c.theta = 0;
     c.score = 0;
     c.center = Point2f(0, 0);
     c.bitSize = 0;
     for (int i = start; i <= end; i++) {
+        float score = cs2x[i].score;
         if (cs2x[i].score < averageScore) {
             continue;
         }
         goodCount++;
-        c.theta += cs2x[i].theta;
-        c.score += cs2x[i].score;
-        c.center += cs2x[i].center;
-        c.bitSize += cs2x[i].bitSize;
+        goodScore += score;
+        c.theta += cs2x[i].theta * score;
+        c.score += score;
+        c.center += cs2x[i].center * score;
+        c.bitSize += cs2x[i].bitSize * score;
     }
-    c.theta /= goodCount;
+    c.theta /= goodScore;
+    c.theta = c.theta % 360;
     c.score /= goodCount;
-    c.center /= goodCount;
-    c.bitSize /= goodCount;
+    c.center /= goodScore;
+    c.bitSize /= goodScore;
     return c;
 }
 
@@ -219,13 +210,16 @@ void groupCandidates(const vector<Candidate>& cs, vector<Candidate>& out) {
     vector<Candidate> cs2x;
     cs2x.insert(cs2x.end(), cs.begin(), cs.end());
     cs2x.insert(cs2x.end(), cs.begin(), cs.end());
+    for (int i = n; i < 2 * n; i++) {
+        cs2x[i].theta += 360;
+    }
 
     bool hasRun = false;
     int cycleEnd = 2 * n;
     int start = 0, end = 0, endTheta = cs2x[0].theta;
     for (int i = 1; i < cycleEnd; i++) {
         int theta = cs2x[i].theta;
-        if (theta != (endTheta + 5) % 360) {
+        if (theta != endTheta + 5) {
             if (hasRun) {
                 // record last run
                 Candidate c = averageCandidates(cs2x, start, end);
@@ -245,6 +239,58 @@ void groupCandidates(const vector<Candidate>& cs, vector<Candidate>& out) {
         Candidate c = averageCandidates(cs2x, start, end);
         out.push_back(c);
     }
+}
+
+float getPairedScore(const Candidate& c0, const Candidate& c1) {
+    float dtheta = c1.theta - c0.theta;
+    if (dtheta < 0) {
+        dtheta += 360;
+    }
+    if (dtheta < 135 || dtheta > 225) {
+        return -1;
+    }
+    float score = c1.score;
+    float dBitSize = abs(c1.bitSize - c0.bitSize);
+    float k = 20;
+    return score - dBitSize * dBitSize * k;
+}
+
+bool findBestCandidates(const vector<Candidate> cs, Candidate& c0, Candidate& c1) {
+    int n = cs.size();
+    if (n < 2) {
+        return false;
+    }
+
+    // first, find the highest-ranked candidate
+    int bestIndex = -1;
+    float bestScore = 0;
+    for (int i = 0; i < n; i++) {
+        float score = cs[i].score;
+        if (score > bestScore) {
+            bestIndex = i;
+            bestScore = score;
+        }
+    }
+    c0 = cs[bestIndex];
+
+    // next, find the candidate with the highest score that has a plausible angle and similar bit size
+    int pairedIndex = -1;
+    float pairedScore = 0;
+    for (int i = 0; i < n; i++) {
+        if (i == bestIndex) {
+            continue;
+        }
+        float score = getPairedScore(c0, cs[i]);
+        if (score > pairedScore) {
+            pairedIndex = i;
+            pairedScore = score;
+        }
+    }
+    if (pairedIndex == -1) {
+        return false;
+    }
+    c1 = cs[pairedIndex];
+    return true;
 }
 
 void ofDrawDetect(
@@ -280,7 +326,6 @@ void ofDrawDetect(
             vs.push_back(v);
         }
 
-        ofSetColor(ofColor(255, 0, 0));
         float threshold = 127;
         float alpha = 0.3;
         bool inTransition = false;
@@ -314,15 +359,31 @@ void ofDrawDetect(
         }
     }
 
+    ofSetColor(ofColor(0, 0, 255));
+    for (int i = 0; i < candidates.size(); i++) {
+        Point2f p = candidates[i].center;
+        ofDrawRectangle(p.x, p.y, 1, 1);
+    }
+
     vector<Candidate> groupedCandidates;
     groupCandidates(candidates, groupedCandidates);
-
-    printVector(groupedCandidates);
-    cout << endl;
-
     ofSetColor(ofColor(255, 0, 0));
     for (int i = 0; i < groupedCandidates.size(); i++) {
         Point2f p = groupedCandidates[i].center;
+        ofDrawRectangle(p.x - 1, p.y - 1, 3, 3);
+    }
+    cout << "groups: ";
+    printVector(groupedCandidates);
+    cout << endl;
+
+    // sort candidates
+    Candidate c0, c1;
+    if (findBestCandidates(groupedCandidates, c0, c1)) {
+        cout << c0 << ", " << c1 << endl;
+        ofSetColor(ofColor(0, 255, 0));
+        Point2f p = c0.center;
+        ofDrawRectangle(p.x - 1, p.y - 1, 3, 3);
+        p = c1.center;
         ofDrawRectangle(p.x - 1, p.y - 1, 3, 3);
     }
 }
