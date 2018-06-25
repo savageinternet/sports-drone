@@ -306,18 +306,23 @@ void readBitLattice(const Mat& mat, const Candidate& c, bitset<12>& bs) {
     Point2f dCol(cosTheta, sinTheta);
     Point2f dRow(sinTheta, -cosTheta);
     for (int i = 0; i < 12; i++) {
-        int row = (i / 4) - 1;
+        int row = 1 - (i / 4);
         float col = (i % 4) - 1.5;
         Point2f p = c.center + c.bitSize * (col * dCol + row * dRow);
         bool b = readBit(mat, p);
+        ofSetColor(ofColor(255, 0, 0));
+        ofDrawBitmapString(b ? "1" : "0", p.x, p.y);
         bs.set(i, b);
     }
 }
 
 void buildFormattedCode(const bitset<12>& bs0, const bitset<12>& bs1, bitset<24>& codeFormatted) {
     bool timing = bs0[4];
+    cout << "bs0: " << bs0 << endl;
+    cout << "bs1: " << bs1 << endl;
     if (timing) {
         // bs0 is right, bs1 is left: reverse bs1
+        cout << "L:bs1 R:bs0" << endl;
         for (int i = 0; i < 12; i++) {
             codeFormatted.set(i, bs1[11 - i]);
         }
@@ -326,6 +331,7 @@ void buildFormattedCode(const bitset<12>& bs0, const bitset<12>& bs1, bitset<24>
         }
     } else {
         // bs1 is right, bs0 is left: reverse bs0
+        cout << "L:bs0 R:bs1" << endl;
         for (int i = 0; i < 12; i++) {
             codeFormatted.set(i, bs0[11 - i]);
         }
@@ -333,6 +339,16 @@ void buildFormattedCode(const bitset<12>& bs0, const bitset<12>& bs1, bitset<24>
             codeFormatted.set(i + 12, bs1[i]);
         }
     }
+    cout << codeFormatted << endl;
+}
+
+void printGroundTruth(int n) {
+    ShoulderCodec codec;
+    bitset<16> code;
+    bitset<24> codeFormatted;
+    codec.encode(n, code);
+    codec.format(code, codeFormatted);
+    codec.print(cout, codeFormatted);
 }
 
 void ofDrawDetect(
@@ -458,6 +474,7 @@ void ofApp::draw(){
             ofSetColor(255, 0, 0);
             contour.draw();
 
+            printGroundTruth(n);
             ofDrawDetect(imageGrey.getPixels(), contour, code);
 
             ofSetColor(WHITE);

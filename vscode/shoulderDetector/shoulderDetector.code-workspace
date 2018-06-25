@@ -63,7 +63,8 @@
 			"ostream": "cpp",
 			"__bit_reference": "cpp",
 			"forward_list": "cpp",
-			"__string": "cpp"
+			"__string": "cpp",
+			"iostream": "cpp"
 		}
 	}
 }

@@ -24,6 +24,7 @@ public:
     
     void encode(int n, bitset<16>& code) const;
     void format(const bitset<16>& code, bitset<24>& codeFormatted) const;
+    void print(ostream& os, const bitset<24>& codeFormatted) const;
     void unformat(const bitset<24>& codeFormatted, bitset<16>& code) const;
     int decode(bitset<16>& code) const;
 };

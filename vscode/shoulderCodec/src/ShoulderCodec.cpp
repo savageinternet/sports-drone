@@ -89,6 +89,33 @@ void ShoulderCodec::format(const bitset<16>& code, bitset<24>& codeFormatted) co
     }
 }
 
+void ShoulderCodec::print(ostream& os, const bitset<24>& codeFormatted) const {
+    for (int i = 0; i < 4; i++) {
+        os << (codeFormatted[i] ? "1" : "0");
+    }
+    os << ' ';
+    for (int i = 12; i < 16; i++) {
+        os << (codeFormatted[i] ? "1" : "0");
+    }
+    os << '\n';
+    for (int i = 4; i < 8; i++) {
+        os << (codeFormatted[i] ? "1" : "0");
+    }
+    os << ' ';
+    for (int i = 16; i < 20; i++) {
+        os << (codeFormatted[i] ? "1" : "0");
+    }
+    os << '\n';
+    for (int i = 8; i < 12; i++) {
+        os << (codeFormatted[i] ? "1" : "0");
+    }
+    os << ' ';
+    for (int i = 20; i < 24; i++) {
+        os << (codeFormatted[i] ? "1" : "0");
+    }
+    os << '\n';
+}
+
 void ShoulderCodec::unformat(const bitset<24>& codeFormatted, bitset<16>& code) const {
     code.reset();
     int i = 0;
