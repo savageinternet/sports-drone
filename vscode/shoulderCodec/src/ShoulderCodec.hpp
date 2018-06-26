@@ -22,11 +22,11 @@ public:
     static const int VALUE_MIN = 0;
     static const int VALUE_MAX = 1 << NUM_DATA_BITS;
     
-    void encode(int n, bitset<16>& code) const;
-    void format(const bitset<16>& code, bitset<24>& codeFormatted) const;
-    void print(ostream& os, const bitset<24>& codeFormatted) const;
-    void unformat(const bitset<24>& codeFormatted, bitset<16>& code) const;
-    int decode(bitset<16>& code) const;
+    static void encode(int n, bitset<16>& code);
+    static void format(const bitset<16>& code, bitset<24>& codeFormatted);
+    static void print(ostream& os, const bitset<24>& codeFormatted);
+    static void unformat(const bitset<24>& codeFormatted, bitset<16>& code);
+    static int decode(bitset<16>& code);
 };
 
 #endif /* ShoulderCodec_hpp */

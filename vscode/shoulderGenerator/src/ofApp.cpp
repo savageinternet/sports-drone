@@ -75,8 +75,8 @@ void ofApp::setup(){
 
 //--------------------------------------------------------------
 void ofApp::update(){
-    codec.encode(n, code);
-    codec.format(code, codeFormatted);
+    ShoulderCodec::encode(n, code);
+    ShoulderCodec::format(code, codeFormatted);
 }
 
 void ofApp::ofDrawShoulderCode() {

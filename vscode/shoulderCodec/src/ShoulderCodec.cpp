@@ -24,7 +24,7 @@ int ShoulderCodec::parity(int n) {
     return (0x6996 >> n) & 1;
 }
 
-void ShoulderCodec::encode(int n, bitset<16>& code) const {
+void ShoulderCodec::encode(int n, bitset<16>& code) {
     if (n < VALUE_MIN) {
         throw out_of_range("value too small");
     } else if (n > VALUE_MAX) {
@@ -64,7 +64,7 @@ void ShoulderCodec::encode(int n, bitset<16>& code) const {
     code.set(i++, parity(bR & 0x7));
 }
 
-void ShoulderCodec::format(const bitset<16>& code, bitset<24>& codeFormatted) const {
+void ShoulderCodec::format(const bitset<16>& code, bitset<24>& codeFormatted) {
     codeFormatted.reset();
     int i = 0;
     // left shoulder
@@ -89,7 +89,7 @@ void ShoulderCodec::format(const bitset<16>& code, bitset<24>& codeFormatted) co
     }
 }
 
-void ShoulderCodec::print(ostream& os, const bitset<24>& codeFormatted) const {
+void ShoulderCodec::print(ostream& os, const bitset<24>& codeFormatted) {
     for (int i = 0; i < 4; i++) {
         os << (codeFormatted[i] ? "1" : "0");
     }
@@ -116,7 +116,7 @@ void ShoulderCodec::print(ostream& os, const bitset<24>& codeFormatted) const {
     os << '\n';
 }
 
-void ShoulderCodec::unformat(const bitset<24>& codeFormatted, bitset<16>& code) const {
+void ShoulderCodec::unformat(const bitset<24>& codeFormatted, bitset<16>& code) {
     code.reset();
     int i = 0;
     // left shoulder
@@ -137,7 +137,7 @@ void ShoulderCodec::unformat(const bitset<24>& codeFormatted, bitset<16>& code) 
     }
 }
 
-int ShoulderCodec::decode(bitset<16>& code) const {
+int ShoulderCodec::decode(bitset<16>& code) {
     /*
      * Split the code into left and right parts, in preparation for
      * multiplying by the parity-check matrix.

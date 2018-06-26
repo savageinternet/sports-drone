@@ -18,15 +18,14 @@ using namespace std;
 
 SCENARIO("ShoulderCodecTest", "[ShoulderCodecTest]" ) {
     GIVEN("A ShoulderCodec instance and bitset of size 16") {
-        ShoulderCodec codec;
         bitset<16> code;
         bitset<24> codeFormatted;
         
         WHEN("we encode each valid number into the bitset, then decode") {
             THEN("we get the same number back") {
                 for (int i = 0; i < ShoulderCodec::VALUE_MAX; i++) {
-                    codec.encode(i, code);
-                    REQUIRE(codec.decode(code) == i);
+                    ShoulderCodec::encode(i, code);
+                    REQUIRE(ShoulderCodec::decode(code) == i);
                 }
             }
         }
@@ -34,10 +33,10 @@ SCENARIO("ShoulderCodecTest", "[ShoulderCodecTest]" ) {
         WHEN("we encode each valid number into the bitset, then format, then unformat, then decode") {
             THEN("we get the same number back") {
                 for (int i = 0; i < ShoulderCodec::VALUE_MAX; i++) {
-                    codec.encode(i, code);
-                    codec.format(code, codeFormatted);
-                    codec.unformat(codeFormatted, code);
-                    REQUIRE(codec.decode(code) == i);
+                    ShoulderCodec::encode(i, code);
+                    ShoulderCodec::format(code, codeFormatted);
+                    ShoulderCodec::unformat(codeFormatted, code);
+                    REQUIRE(ShoulderCodec::decode(code) == i);
                 }
             }
         }
@@ -46,9 +45,9 @@ SCENARIO("ShoulderCodecTest", "[ShoulderCodecTest]" ) {
             THEN("the error is corrected properly") {
                 for (int i = 0; i < ShoulderCodec::VALUE_MAX; i++) {
                     for (int j = 0; j < 16; j++) {
-                        codec.encode(i, code);
+                        ShoulderCodec::encode(i, code);
                         code.flip(j);
-                        REQUIRE(codec.decode(code) == i);
+                        REQUIRE(ShoulderCodec::decode(code) == i);
                     }
                 }
             }
@@ -58,12 +57,12 @@ SCENARIO("ShoulderCodecTest", "[ShoulderCodecTest]" ) {
             srand(static_cast<unsigned int>(time(NULL)));
             THEN("the error is corrected properly") {
                 for (int i = 0; i < ShoulderCodec::VALUE_MAX; i++) {
-                    codec.encode(i, code);
+                    ShoulderCodec::encode(i, code);
                     int j = rand() % 8;
                     int k = rand() % 8 + 8;
                     code.flip(j);
                     code.flip(k);
-                    REQUIRE(codec.decode(code) == i);
+                    REQUIRE(ShoulderCodec::decode(code) == i);
                 }
             }
         }
@@ -72,7 +71,7 @@ SCENARIO("ShoulderCodecTest", "[ShoulderCodecTest]" ) {
             srand(static_cast<unsigned int>(time(NULL)));
             THEN("decode() returns -1") {
                 for (int i = 0; i < ShoulderCodec::VALUE_MAX; i++) {
-                    codec.encode(i, code);
+                    ShoulderCodec::encode(i, code);
                     int j = rand() % 8;
                     int k;
                     do {
@@ -80,7 +79,7 @@ SCENARIO("ShoulderCodecTest", "[ShoulderCodecTest]" ) {
                     } while (k == j);
                     code.flip(j);
                     code.flip(k);
-                    REQUIRE(codec.decode(code) == -1);
+                    REQUIRE(ShoulderCodec::decode(code) == -1);
                 }
             }
         }
@@ -89,7 +88,7 @@ SCENARIO("ShoulderCodecTest", "[ShoulderCodecTest]" ) {
             srand(static_cast<unsigned int>(time(NULL)));
             THEN("decode() returns -1") {
                 for (int i = 0; i < ShoulderCodec::VALUE_MAX; i++) {
-                    codec.encode(i, code);
+                    ShoulderCodec::encode(i, code);
                     int j = rand() % 8 + 8;
                     int k;
                     do {
@@ -97,7 +96,7 @@ SCENARIO("ShoulderCodecTest", "[ShoulderCodecTest]" ) {
                     } while (k == j);
                     code.flip(j);
                     code.flip(k);
-                    REQUIRE(codec.decode(code) == -1);
+                    REQUIRE(ShoulderCodec::decode(code) == -1);
                 }
             }
         }

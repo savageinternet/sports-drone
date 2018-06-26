@@ -18,9 +18,9 @@ class ofApp : public ofBaseApp{
 private:
     static const int WHITE = 255;
 
+    bitset<24> codeFormatted;
     bitset<16> code;
     int result;
-    ShoulderCodec codec;
     ofPolyline contour;
     ShoulderDetector detector;
     ofImage image;

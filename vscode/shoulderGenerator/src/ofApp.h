@@ -23,7 +23,6 @@ private:
     ofImage noise;
     bitset<16> code;
     bitset<24> codeFormatted;
-    ShoulderCodec codec;
     string projectRoot;
 
     ofxPanel gui;
