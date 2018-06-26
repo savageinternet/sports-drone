@@ -20,7 +20,6 @@ var timeUnderlay = d3.select('#underlay')
 
 var vid = d3.select("#soccervid")._groups[0][0];
 
-//d3.json('/data.json')
 d3.json('/data.json')
   .then(function(data) {
     var mData = JSON.parse(JSON.stringify(data));
@@ -159,7 +158,9 @@ function doDrawing(data) {
     .range([data['height'], 0]);
   function color(d) { return "rgb(" + d.color.r + "," + d.color.g + "," + d.color.b + ")"; };
   function opacity(d, frame) {
-    return (frame < d.born || frame > d.died)? 0.0 : 1.0;
+    if (frame < d.born || frame > d.died)
+      return 0.0;
+    return 1.0;
   }
   function key(d) { return d.label; }
 
@@ -175,14 +176,18 @@ function doDrawing(data) {
   var interactionUnderlay = svg.append('g')
       .attr("class", "interaction");
 
+
+  var paths = svg.append("g")
+      .attr("class", "paths");
+
   var dot = svg.append("g")
       .attr("class", "dots")
       .selectAll(".dot")
       .data(interpolateData(0))
       .enter().append("circle")
         .attr("class", "dot")
-        .style("fill", function(d) { return color(d); })
-        .style("opacity", function(d) { return opacity(d, 1); })
+        .style("fill", function(d) { return d.color; })
+        .style("opacity", function(d) { return d.opacity; })
         .attr("r", 6)
         .call(positionFade);
 
@@ -198,9 +203,6 @@ function doDrawing(data) {
         .text(function(d) { return key(d); })
         .call(positionText);
 
-  var paths = svg.append("g")
-      .attr("class", "paths");
-
   // Interpolates the dataset for the given frame.
   function interpolateData(frame) {
     return data.tracked.map(function(d) {
@@ -208,8 +210,9 @@ function doDrawing(data) {
         label: d.label,
         x: interpolateValues(d.path, frame, "x"),
         y: interpolateValues(d.path, frame, "y"),
-        color: d.color,
-        opacity: opacity(d, frame)
+        color: color(d),
+        opacity: opacity(d, frame),
+        path: d.path
       };
     });
   }
@@ -232,10 +235,9 @@ function doDrawing(data) {
         .call(positionFade);
     text.data(interpolateData(frame), key)
         .call(positionText);
-    var vid = d3.select("#soccervid")._groups[0][0];
     vid.play()
       .then(function() {
-        vid.currentTime = frame/d3.select("#slider-time").attr("max")*vid.duration;
+        vid.currentTime = frame/d3.select("#slider-time").attr("max") * vid.duration;
         vid.pause();
       });
   }
@@ -258,14 +260,74 @@ function doDrawing(data) {
     .x(function(d) { return x(d.x); })
     .y(function(d) { return y(d.y); })
     //.curve(d3.curveCardinal); // make it a li'l curvy (don't do this; it kinda fucks with intersection calculations... :( ))
+
   var newLinez = linez.enter();
   newLinez.append('path')
-    .attr('d', function(labelled) {
-      return line(labelled.path);
+    .attr('d', function(d) {
+      var originalLine = d.path;
+      var offsetLine = JSON.parse(JSON.stringify(originalLine));
+      for(var i = 0; i < offsetLine.length-1; i++) {
+        // offset each point depending on the velocity at that point
+        var velocity = distance(originalLine[i+1], originalLine[i]) /
+                        (originalLine[i+1].time - originalLine[i].time);
+
+        if (velocity == 0) {
+          // dot isn't movin
+          continue;
+        }
+
+        var scale = .5; // px per frame
+        var travelVector = {x: originalLine[i+1].x - originalLine[i].x / velocity,
+                            y: originalLine[i+1].y - originalLine[i].y / velocity};
+
+        var offsetVector = {};
+
+        if (travelVector.x != 0) {
+          // find a perpendicular vector
+          offsetVector = {x: -(travelVector.y)/travelVector.x,
+                          y: 1};
+          var offsetVectorLength = Math.sqrt(offsetVector.x*offsetVector.x + offsetVector.y*offsetVector.y);
+          // normalize
+          offsetVector.x /= offsetVectorLength;
+          offsetVector.y /= offsetVectorLength;
+          // now offset by speed of motion, scaled some
+          offsetVector.x *= velocity/scale;
+          offsetVector.y *= velocity/scale;
+        } else {
+          offsetVector = {x: 1, y: 0};
+        }
+
+        // now do the offset
+        offsetLine[i].x += offsetVector.x;
+        offsetLine[i].y += offsetVector.y;
+
+        if (Number.isNaN(offsetLine[i].x) || Number.isNaN(offsetLine[i].y)) {
+          // hm?
+          offsetLine[i] = originalLine[i];
+        }
+      }
+      // now do it again, but we gotta smooooooooooth it all out
+      var smoothWid = 3;
+      var smooth = function(idx) {
+        var xSum = 0;
+        var ySum = 0;
+        for (var i = idx-smoothWid; i <= idx+smoothWid; i++) {
+          xSum += offsetLine[i].x;
+          ySum += offsetLine[i].y;
+        }
+        return { x: xSum / (smoothWid*2+1), y: ySum / (smoothWid*2+1) };
+      }
+      for (var i = smoothWid; i < offsetLine.length-smoothWid; i++) {
+        // to smooth... we'll... average the smoothWid points in front and behind.
+        offsetLine[i] = smooth(i);
+      }
+
+      // put them together; make sure to reverse the offset so we dont' skip back to front
+      return line(originalLine.concat(offsetLine.reverse()));
     })
-    .attr('fill', "none") // don't fill it, that's fucking annoying
+    .attr('fill', function(d) { return color(d); }) // we have to fill it now. :(
     .attr("stroke", function(d) { return color(d); })
-    .attr('opacity', .3)
+    .attr('opacity', .7)
     ;
 
   // title it
@@ -289,7 +351,7 @@ function doDrawing(data) {
           .append("circle")
           .attr("cx", mouse[0])
           .attr("cy", mouse[1])
-          .style("fill", "#777")
+          .style("fill", "#FFF")
           .style("opacity", ".3")
           .attr("r", r);
 
