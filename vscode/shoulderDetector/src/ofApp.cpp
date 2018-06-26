@@ -11,6 +11,7 @@
 #include "ofxGui.h"
 
 #include "ShoulderCodec.hpp"
+#include "ShoulderDetector.hpp"
 #include "StringUtils.hpp"
 
 using namespace cv;
