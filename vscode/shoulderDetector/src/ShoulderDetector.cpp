@@ -11,8 +11,17 @@ using namespace cv;
 using namespace ofxCv;
 using namespace std;
 
+PointValue::PointValue(Point2f p, uchar v) : p(p), v(v) {}
+
+Transition::Transition(int index, float strength) : index(index), strength(strength) {}
+
+ostream& operator<<(ostream& os, const PointValue& pv) {
+    os << "{p: " << pv.p << ", v: " << pv.v << "}";
+    return os;
+}
+
 ostream& operator<<(ostream& os, const Transition& t) {
-    os << "(" << t.index << ", " << t.strength << ")";
+    os << "{index: " << t.index << ", strength: " << t.strength << "}";
     return os;
 }
 
@@ -65,13 +74,46 @@ bool ShoulderDetector::contourIntersection(const vector<Point2f>& contour, Point
 
 template<typename T> void ShoulderDetector::printVector(vector<T> v) {
     int n = v.size();
+    if (n == 0) {
+        cout << "[]";
+        return;
+    }
     cout << "[\n";
-    for (int i = 0; i < n; i++) {
-        cout << "  " << v.at(i);
-        if (i == n - 1) {
-            cout << "\n]";
+    for (int i = 0; i < n - 1; i++) {
+        cout << "  " << v.at(i) << ",\n";
+    }
+    cout << "  " << v.at(n - 1) << "\n]";
+}
+
+void ShoulderDetector::getPointValues(const Mat& mat, LineIterator& it, vector<PointValue>& pvs) {
+    int n = it.count;
+    for (int i = 0; i < n; i++, ++it) {
+        Point2f p = it.pos();
+        uchar v = mat.at<uchar>(p);
+        PointValue pv(p, v);
+        pvs.push_back(pv);
+    }
+}
+
+void ShoulderDetector::getTransitions(const vector<PointValue>& pvs, vector<Transition>& ts) {
+    int n = pvs.size();
+    if (n == 0) {
+        return;
+    }
+    float mu = pvs[0].v;
+    bool inTransition = false;
+    for (int i = 1; i < n; i++) {
+        float dv = pvs[i].v - mu;
+        mu += ROLLING_ALPHA * dv;
+        dv = abs(dv);
+        if (dv >= ROLLING_THRESHOLD) {
+            if (!inTransition) {
+                Transition t(i, dv);
+                ts.push_back(t);
+            }
+            inTransition = true;
         } else {
-            cout << ",\n";
+            inTransition = false;
         }
     }
 }
@@ -80,9 +122,8 @@ float ShoulderDetector::scoreTransitions(const vector<Transition>& ts, int i) {
     int di10 = ts[i + 1].index - ts[i].index;
     int di21 = ts[i + 2].index - ts[i + 1].index;
     int di = abs(di21 - di10);
-    float k = 20;
     float s = ts[i].strength + ts[i + 1].strength + ts[i + 2].strength;
-    return s - k * di * di;
+    return s - INDEX_DIFFERENCE_PENALTY * di * di;
 }
 
 int ShoulderDetector::findBestTransitions(const vector<Transition>& ts, float& score) {
@@ -109,15 +150,24 @@ float ShoulderDetector::distance(const Point2f& p0, const Point2f& p1) {
     return sqrt(dx * dx + dy * dy);
 }
 
-Candidate ShoulderDetector::getCandidate(const vector<Transition>& ts, int theta, float score, const vector<Point2f> ps, int i) {
-    Candidate c;
-    c.theta = theta;
-    c.score = score;
+Candidate ShoulderDetector::getCandidate(
+        const vector<Transition>& ts,
+        int theta,
+        float score,
+        const vector<PointValue>& pvs,
+        int i) {
     int i0 = ts[i].index;
     int i1 = ts[i + 1].index;
     int i2 = ts[i + 2].index;
-    c.center = (ps[i0] + ps[i1] + ps[i2]) / 3;
-    c.bitSize = (distance(ps[i0], ps[i1]) + distance(ps[i1], ps[i2])) / 2;
+    Point2f p0 = pvs[i0].p;
+    Point2f p1 = pvs[i1].p;
+    Point2f p2 = pvs[i2].p;
+
+    Candidate c;
+    c.theta = theta;
+    c.score = score;
+    c.center = (p0 + p1 + p2) / 3;
+    c.bitSize = (distance(p0, p1) + distance(p1, p2)) / 2;
     return c;
 }
 
@@ -175,7 +225,7 @@ void ShoulderDetector::groupCandidates(const vector<Candidate>& cs, vector<Candi
     int start = 0, end = 0, endTheta = cs2x[0].theta;
     for (int i = 1; i < cycleEnd; i++) {
         int theta = cs2x[i].theta;
-        if (theta != endTheta + 5) {
+        if (theta != endTheta + THETA_STEP) {
             if (hasRun) {
                 // record last run
                 Candidate c = averageCandidates(cs2x, start, end);
@@ -207,8 +257,7 @@ float ShoulderDetector::getPairedScore(const Candidate& c0, const Candidate& c1)
     }
     float score = c1.score;
     float dBitSize = abs(c1.bitSize - c0.bitSize);
-    float k = 20;
-    return score - dBitSize * dBitSize * k;
+    return score - BITSIZE_DIFFERENCE_PENALTY * dBitSize * dBitSize;
 }
 
 bool ShoulderDetector::findBestCandidates(const vector<Candidate> cs, Candidate& c0, Candidate& c1) {
@@ -254,7 +303,20 @@ bool ShoulderDetector::readBit(const Mat& mat, const Point2f& p) {
     return v <= 127;
 }
 
-void ShoulderDetector::readBitLattice(const Mat& mat, const Candidate& c, bitset<12>& bs) {
+void ShoulderDetector::readBitsTiming(const Mat& mat, const Candidate& c, bitset<4>& timing) {
+    float thetaRad = c.theta * M_PI / 180.0;
+    float cosTheta = cos(thetaRad);
+    float sinTheta = sin(thetaRad);
+    Point2f dCol(cosTheta, sinTheta);
+    for (int i = 0; i < 4; i++) {
+        float col = (i % 4) - 1.5;
+        Point2f p = c.center + c.bitSize * col * dCol;
+        bool b = readBit(mat, p);
+        timing.set(i, b);
+    }
+}
+
+void ShoulderDetector::readBitsLattice(const Mat& mat, const Candidate& c, bitset<12>& bs) {
     // draw lattice to show off
     float thetaRad = c.theta * M_PI / 180.0;
     float cosTheta = cos(thetaRad);
@@ -266,8 +328,6 @@ void ShoulderDetector::readBitLattice(const Mat& mat, const Candidate& c, bitset
         float col = (i % 4) - 1.5;
         Point2f p = c.center + c.bitSize * (col * dCol + row * dRow);
         bool b = readBit(mat, p);
-        //ofSetColor(ofColor(255, 0, 0));
-        //ofDrawBitmapString(b ? "1" : "0", p.x, p.y);
         bs.set(i, b);
     }
 }
@@ -322,71 +382,42 @@ bool ShoulderDetector::detect(
     /*
      * Cast multiple rays out from the centroid to the contour edges.
      */
-    vector<Candidate> candidates;
-    for (int theta = 0; theta < 360; theta += 5) {
+    vector<Candidate> cs;
+    for (int theta = 0; theta < 360; theta += THETA_STEP) {
         float thetaRad = theta * M_PI / 180.0;
         if (!contourIntersection(contour, p1, thetaRad, p2)) {
-            // TODO: now what?  this shouldn't happen...
             continue;
         }
         LineIterator it(mat, p1, p2);
-        int n = it.count;
-        vector<Point2f> ps;
-        vector<uchar> vs;
-        for (int i = 0; i < n; i++, ++it) {
-            Point2f p = it.pos();
-            uchar v = mat.at<uchar>(p);
-            ps.push_back(p);
-            vs.push_back(v);
-        }
 
-        float threshold = 127;
-        float alpha = 0.3;
-        bool inTransition = false;
-        vector<Transition> transitions;
-        int muStart = 0;
-        for (int i = 0; i < 4; i++) {
-            muStart += vs[i];
-        }
-        float mu = muStart / 4;
-        for (int i = 4; i < n; i++) {
-            float dv = vs[i] - mu;
-            mu += alpha * dv;
-            dv = abs(dv);
-            if (dv >= threshold) {
-                if (!inTransition) {
-                    Transition t;
-                    t.index = i;
-                    t.strength = dv;
-                    transitions.push_back(t);
-                }
-                inTransition = true;
-            } else {
-                inTransition = false;
-            }
-        }
+        vector<PointValue> pvs;
+        getPointValues(mat, it, pvs);
+
+        vector<Transition> ts;
+        getTransitions(pvs, ts);
+
         float score;
-        int i = findBestTransitions(transitions, score);
+        int i = findBestTransitions(ts, score);
         if (i != -1) {
-            Candidate c = getCandidate(transitions, theta, score, ps, i);
-            candidates.push_back(c);
+            Candidate c = getCandidate(ts, theta, score, pvs, i);
+            cs.push_back(c);
         }
     }
     
     cout << "candidates: ";
-    printVector(candidates);
+    printVector(cs);
     cout << endl;
 
-    vector<Candidate> groupedCandidates;
-    groupCandidates(candidates, groupedCandidates);
+    vector<Candidate> csGrouped;
+    groupCandidates(cs, csGrouped);
 
     cout << "groups: ";
-    printVector(groupedCandidates);
+    printVector(csGrouped);
     cout << endl;
 
     // select best candidates
     Candidate c0, c1;
-    if (!findBestCandidates(groupedCandidates, c0, c1)) {
+    if (!findBestCandidates(csGrouped, c0, c1)) {
         cout << "no best candidates!" << endl;
         return false;
     }
@@ -395,14 +426,13 @@ bool ShoulderDetector::detect(
     // read bits!
     bitset<12> bs0;
     bitset<12> bs1;
-    readBitLattice(mat, c0, bs0);
-    readBitLattice(mat, c1, bs1);
+    readBitsLattice(mat, c0, bs0);
+    readBitsLattice(mat, c1, bs1);
     buildFormattedCode(bs0, bs1, codeFormatted);
 
     cout << "bs0: " << bs0 << endl;
     cout << "bs1: " << bs1 << endl;
     cout << codeFormatted << endl;
 
-    // TODO: verify that timing row is intact
     return verify(codeFormatted);
 }

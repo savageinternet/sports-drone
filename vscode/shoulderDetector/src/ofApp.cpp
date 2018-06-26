@@ -57,7 +57,6 @@ void ofApp::update(){
     if (codeDetected) {
         ShoulderCodec::unformat(codeFormatted, code);
         result = ShoulderCodec::decode(code);
-        //ofDrawBitmapStringHighlight(ss.str(), centroid.x, centroid.y);
     } else {
         result = -1;
         cout << "no code detected!" << endl;
