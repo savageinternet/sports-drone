@@ -306,6 +306,22 @@ function doDrawing(data) {
           offsetLine[i] = originalLine[i];
         }
       }
+      // now do it again, but we gotta smooooooooooth it all out
+      var smoothWid = 3;
+      var smooth = function(idx) {
+        var xSum = 0;
+        var ySum = 0;
+        for (var i = idx-smoothWid; i <= idx+smoothWid; i++) {
+          xSum += offsetLine[i].x;
+          ySum += offsetLine[i].y;
+        }
+        return { x: xSum / (smoothWid*2+1), y: ySum / (smoothWid*2+1) };
+      }
+      for (var i = smoothWid; i < offsetLine.length-smoothWid; i++) {
+        // to smooth... we'll... average the smoothWid points in front and behind.
+        offsetLine[i] = smooth(i);
+      }
+
       // put them together; make sure to reverse the offset so we dont' skip back to front
       return line(originalLine.concat(offsetLine.reverse()));
     })
