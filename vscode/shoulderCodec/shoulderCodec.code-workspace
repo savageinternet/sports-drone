@@ -16,7 +16,8 @@
 			"istream": "cpp",
 			"locale": "cpp",
 			"tuple": "cpp",
-			"utility": "cpp"
+			"utility": "cpp",
+			"vector": "cpp"
 		}
 	}
 }
