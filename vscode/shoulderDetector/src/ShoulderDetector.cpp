@@ -355,7 +355,7 @@ void ShoulderDetector::buildFormattedCode(const bitset<12>& bs0, const bitset<12
     }
 }
 
-bool ShoulderDetector::verify(const bitset<24>& codeFormatted) {
+bool ShoulderDetector::verifyFormattedCode(const bitset<24>& codeFormatted) {
     for (int i = 4; i < 8; i++) {
         bool expected = i % 2 == 0;
         if (codeFormatted[i] != expected) {
@@ -369,26 +369,23 @@ bool ShoulderDetector::verify(const bitset<24>& codeFormatted) {
 }
 
 bool ShoulderDetector::detect(
-        const ofPixels& pixels,
-        const ofPolyline& ofContour,
+        const Mat& mat,
+        const vector<Point2f>& contour,
+        const Point2f centroid,
         bitset<24>& codeFormatted) {
-    ofVec2f centroid = ofContour.getCentroid2D();
-    
-    Mat mat = toCv(pixels);
-    vector<Point2f> contour = toCv(ofContour);
-    Point2f p1 = toCv(centroid);
-    Point2f p2;
 
     /*
-     * Cast multiple rays out from the centroid to the contour edges.
+     * Cast multiple rays out from the centroid to the contour edges, collecting
+     * candidate code locations in the process.
      */
+    Point2f boundary;
     vector<Candidate> cs;
     for (int theta = 0; theta < 360; theta += THETA_STEP) {
         float thetaRad = theta * M_PI / 180.0;
-        if (!contourIntersection(contour, p1, thetaRad, p2)) {
+        if (!contourIntersection(contour, centroid, thetaRad, boundary)) {
             continue;
         }
-        LineIterator it(mat, p1, p2);
+        LineIterator it(mat, centroid, boundary);
 
         vector<PointValue> pvs;
         getPointValues(mat, it, pvs);
@@ -434,5 +431,5 @@ bool ShoulderDetector::detect(
     cout << "bs1: " << bs1 << endl;
     cout << codeFormatted << endl;
 
-    return verify(codeFormatted);
+    return verifyFormattedCode(codeFormatted);
 }

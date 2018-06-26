@@ -21,7 +21,7 @@ private:
     bitset<24> codeFormatted;
     bitset<16> code;
     int result;
-    ofPolyline contour;
+    ofPolyline ofContour;
     ShoulderDetector detector;
     ofImage image;
     ofImage imageGrey;

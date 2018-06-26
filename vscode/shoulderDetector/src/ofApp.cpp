@@ -41,19 +41,20 @@ void ofApp::update(){
     if (!image.isAllocated() || ranImageDetection) {
         return;
     }
-    contour.clear();
+    ofContour.clear();
     int ds = size * 6;
-    contour.addVertex(x0 - ds, y0 - ds);
-    contour.addVertex(x0 + ds, y0 - ds);
-    contour.addVertex(x0 + ds, y0 + ds);
-    contour.addVertex(x0 - ds, y0 + ds);
-    contour.close();
+    ofContour.addVertex(x0 - ds, y0 - ds);
+    ofContour.addVertex(x0 + ds, y0 - ds);
+    ofContour.addVertex(x0 + ds, y0 + ds);
+    ofContour.addVertex(x0 - ds, y0 + ds);
+    ofContour.close();
 
     printGroundTruth(n);
-    bool codeDetected = detector.detect(
-        imageGrey.getPixels(),
-        contour,
-        codeFormatted);
+    Mat mat = toCv(imageGrey.getPixels());
+    vector<Point2f> contour = toCv(ofContour);
+    ofVec2f ofCentroid = ofContour.getCentroid2D();
+    Point2f centroid = toCv(ofCentroid);
+    bool codeDetected = detector.detect(mat, contour, centroid, codeFormatted);
     if (codeDetected) {
         ShoulderCodec::unformat(codeFormatted, code);
         result = ShoulderCodec::decode(code);
@@ -73,7 +74,7 @@ void ofApp::draw(){
             oss << result << "!";
             ofDrawBitmapString(oss.str(), x0, y0);
             ofSetColor(255, 0, 0);
-            contour.draw();
+            ofContour.draw();
             ofSetColor(WHITE);
         }
     }

@@ -40,14 +40,17 @@ public:
     static const constexpr float INDEX_DIFFERENCE_PENALTY = 20;
     static const constexpr float BITSIZE_DIFFERENCE_PENALTY = 20;
 
+    // helper functions
     bool rayIntersection(Point2f p1, Point2f p2, Point2f o, float theta, Point2f& out);
     bool contourIntersection(const vector<Point2f>& contour, Point2f o, float theta, Point2f& out);
     template<typename T> void printVector(vector<T> v);
+    float distance(const Point2f& p0, const Point2f& p1);
+
+    // detection functions
     void getPointValues(const Mat& mat, LineIterator& it, vector<PointValue>& pvs);
     void getTransitions(const vector<PointValue>& pvs, vector<Transition>& ts);
     float scoreTransitions(const vector<Transition>& ts, int i);
     int findBestTransitions(const vector<Transition>& ts, float& score);
-    float distance(const Point2f& p0, const Point2f& p1);
     Candidate getCandidate(
         const vector<Transition>& ts,
         int theta,
@@ -62,6 +65,11 @@ public:
     void readBitsTiming(const Mat& mat, const Candidate& c, bitset<4>& timing);
     void readBitsLattice(const Mat& mat, const Candidate& c, bitset<12>& bs);
     void buildFormattedCode(const bitset<12>& bs0, const bitset<12>& bs1, bitset<24>& codeFormatted);
-    bool verify(const bitset<24>& codeFormatted);
-    bool detect(const ofPixels& pixels, const ofPolyline& ofContour, bitset<24>& codeFormatted);
+    bool verifyFormattedCode(const bitset<24>& codeFormatted);
+
+    bool detect(
+        const Mat& mat,
+        const vector<Point2f>& contour,
+        Point2f centroid,
+        bitset<24>& codeFormatted);
 };
