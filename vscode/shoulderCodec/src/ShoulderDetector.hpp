@@ -39,10 +39,7 @@ public:
     static const constexpr float BITSIZE_DIFFERENCE_PENALTY = 20;
 
     // helper functions
-    bool rayIntersection(Point2f p1, Point2f p2, Point2f o, float theta, Point2f& out);
-    bool contourIntersection(const vector<Point2f>& contour, Point2f o, float theta, Point2f& out);
     template<typename T> void printVector(vector<T> v);
-    float distance(const Point2f& p0, const Point2f& p1);
 
     // detection functions
     void getPointValues(const Mat& mat, LineIterator& it, vector<PointValue>& pvs);

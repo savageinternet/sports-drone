@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 
+#include "GeometryUtils.hpp"
 #include "ShoulderDetector.hpp"
 
 using namespace cv;
@@ -27,45 +28,6 @@ ostream& operator<<(ostream& os, const Candidate& c) {
         ", center: " << c.center <<
         ", bitSize: " << c.bitSize << "}";
     return os;
-}
-
-// see https://stackoverflow.com/questions/14307158/how-do-you-check-for-intersection-between-a-line-segment-and-a-line-ray-emanatin
-bool ShoulderDetector::rayIntersection(Point2f p1, Point2f p2, Point2f o, float theta, Point2f& out) {
-    Point2f r(cos(theta), sin(theta));
-    Point2f s = p2 - p1;
-    Point2f q = p1 - o;
-
-    float qxr = q.x * r.y - q.y * r.x;
-    float rxs = r.x * s.y - r.y * s.x;
-    if (abs(rxs) < 1e-6) {
-        return false;
-    }
-    float u = qxr / rxs;
-    if (u < 0 || u > 1) {
-        return false;
-    }
-    float qxs = q.x * s.y - q.y * s.x;
-    float t = qxs / rxs;
-    if (t < 0) {
-        return false;
-    }
-    out = p1 + u * s;
-    return true;
-}
-
-bool ShoulderDetector::contourIntersection(const vector<Point2f>& contour, Point2f o, float theta, Point2f& out) {
-    int n = contour.size();
-    Point2f p1 = contour[0];
-    Point2f p2;
-    for (int i = 1; i < n; i++) {
-        p2 = contour[i];
-        if (rayIntersection(p1, p2, o, theta, out)) {
-            return true;
-        }
-        p1 = p2;
-    }
-    p2 = contour[0];
-    return rayIntersection(p1, p2, o, theta, out);
 }
 
 template<typename T> void ShoulderDetector::printVector(vector<T> v) {
@@ -140,12 +102,6 @@ int ShoulderDetector::findBestTransitions(const vector<Transition>& ts, float& s
     return bestIndex;
 }
 
-float ShoulderDetector::distance(const Point2f& p0, const Point2f& p1) {
-    float dx = p1.x - p0.x;
-    float dy = p1.y - p0.y;
-    return sqrt(dx * dx + dy * dy);
-}
-
 Candidate ShoulderDetector::getCandidate(
         const vector<Transition>& ts,
         int theta,
@@ -158,12 +114,14 @@ Candidate ShoulderDetector::getCandidate(
     Point2f p0 = pvs[i0].p;
     Point2f p1 = pvs[i1].p;
     Point2f p2 = pvs[i2].p;
+    float d01 = GeometryUtils::distance(p0, p1);
+    float d12 = GeometryUtils::distance(p1, p2);
 
     Candidate c;
     c.theta = theta;
     c.score = score;
     c.center = (p0 + p1 + p2) / 3;
-    c.bitSize = (distance(p0, p1) + distance(p1, p2)) / 2;
+    c.bitSize = (d01 + d12) / 2;
     return c;
 }
 
@@ -378,7 +336,7 @@ bool ShoulderDetector::detect(
     vector<Candidate> cs;
     for (int theta = 0; theta < 360; theta += THETA_STEP) {
         float thetaRad = theta * M_PI / 180.0;
-        if (!contourIntersection(contour, centroid, thetaRad, boundary)) {
+        if (!GeometryUtils::contourIntersection(contour, centroid, thetaRad, boundary)) {
             continue;
         }
         LineIterator it(mat, centroid, boundary);

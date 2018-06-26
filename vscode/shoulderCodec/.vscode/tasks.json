@@ -35,30 +35,6 @@
         },
         {
             "type": "shell",
-            "label": "clean library",
-            "presentation": {
-                "reveal": "always",
-                "panel": "new"
-            },
-            "command": "make",
-            "args": [
-                "CleanLibrary"
-            ]
-        },
-        {
-            "type": "shell",
-            "label": "clean test",
-            "presentation": {
-                "reveal": "always",
-                "panel": "new"
-            },
-            "command": "make",
-            "args": [
-                "CleanTest"
-            ]
-        },
-        {
-            "type": "shell",
             "label": "clean",
             "presentation": {
                 "reveal": "always",
