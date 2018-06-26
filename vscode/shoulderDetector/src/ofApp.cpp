@@ -384,7 +384,8 @@ void ofDrawDetect(
             vs.push_back(v);
         }
 
-        float threshold = 127;
+        ofSetColor(ofColor(255, 0, 255));
+        float threshold = 80;
         float alpha = 0.3;
         bool inTransition = false;
         vector<Transition> transitions;
@@ -403,6 +404,9 @@ void ofDrawDetect(
                     t.index = i;
                     t.strength = dv;
                     transitions.push_back(t);
+
+                    Point2f p = ps[i];
+                    ofDrawRectangle(p.x, p.y, 1, 1);
                 }
                 inTransition = true;
             } else {
@@ -420,8 +424,12 @@ void ofDrawDetect(
     ofSetColor(ofColor(0, 0, 255));
     for (int i = 0; i < candidates.size(); i++) {
         Point2f p = candidates[i].center;
-        ofDrawRectangle(p.x, p.y, 1, 1);
+        ofDrawLine(p.x - 2, p.y, p.x + 2, p.y);
+        ofDrawLine(p.x, p.y - 2, p.x, p.y + 2);
     }
+    cout << "candidates: ";
+    printVector(candidates);
+    cout << endl;
 
     vector<Candidate> groupedCandidates;
     groupCandidates(candidates, groupedCandidates);
