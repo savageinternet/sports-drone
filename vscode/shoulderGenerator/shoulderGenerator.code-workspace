@@ -24,7 +24,10 @@
 			"stack": "cpp",
 			"__locale": "cpp",
 			"memory": "cpp",
-			"vector": "cpp"
+			"vector": "cpp",
+			"string": "cpp",
+			"bitset": "cpp",
+			"set": "cpp"
 		}
 	}
 }

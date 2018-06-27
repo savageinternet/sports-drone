@@ -11,6 +11,7 @@
 #include "ofxGui.h"
 
 #include "ShoulderCodec.hpp"
+#include "ShoulderDetector.hpp"
 
 using namespace cv;
 using namespace ofxCv;
@@ -48,16 +49,19 @@ void ofApp::setup(){
     // allocate (but do not compute) noise texture
     ofSetupNoise();
 
-    btnRandomizeParameters.addListener(this, &ofApp::onClickRandomizeParameters);
+    btnRandomizeParameters.addListener(this, &ofApp::randomizeParameters);
+    btnSaveCurrentImage.addListener(this, &ofApp::saveCurrentImage);
 
-    gui.setup("Code Generation");
+    gui.setup("Settings");
+
+    imageParameters.setName("Image Parameters");
+    imageParameters.add(showBg.set("Show Background?", false));
+    imageParameters.add(addNoise.set("Add Noise?", false));
+    gui.add(imageParameters);
 
     codeParameters.setName("Code Parameters");
-    codeParameters.add(showBg.set("Show Background?", false));
-    codeParameters.add(addNoise.set("Add Noise?", false));
     codeParameters.add(n.set("Encoded Value:", 42, 0, 255));
-    codeParameters.add(x0.set("Left:", 256, 256, 1024));
-    codeParameters.add(y0.set("Top:", 120, 120, 600));
+    codeParameters.add(p0.set("Center: ", ofVec2f(256, 120), ofVec2f(256, 120), ofVec2f(1024, 600)));
     codeParameters.add(size.set("Size:", 16, 4, 16));
     codeParameters.add(theta.set("Rotation:", 0, 0, 359));
     codeParameters.add(dTheta.set("Shoulder Rotation:", 0, -20, 20));
@@ -68,7 +72,9 @@ void ofApp::setup(){
     codeParameters.add(occRightUnits.set("Occlusion Right:", 0, 0, 0.25));
     gui.add(codeParameters);
 
-    gui.add(btnRandomizeParameters.setup("Random"));
+    gui.add(runDetection.set("Run Detection?", false));
+    gui.add(btnRandomizeParameters.setup("Randomize"));
+    gui.add(btnSaveCurrentImage.setup("Save"));
 
     gui.setPosition(0, 0);
 }
@@ -87,7 +93,7 @@ void ofApp::ofDrawShoulderCode() {
     int i = 0;
 
     ofPushMatrix();  // shoulder code
-    ofTranslate(x0, y0, 0);
+    ofTranslate(p0->x, p0->y, 0);
     ofRotateZDeg(theta);
     ofScale(size);
 
@@ -160,6 +166,57 @@ void ofApp::ofDrawNoise() {
     ofSetColor(WHITE);
 }
 
+void printGroundTruth(int n) {
+    bitset<16> code;
+    bitset<24> codeFormatted;
+    ShoulderCodec::encode(n, code);
+    ShoulderCodec::format(code, codeFormatted);
+    ShoulderCodec::print(cout, codeFormatted);
+}
+
+void ofApp::ofDrawDetect() {
+    getScreenImage(image);
+    convertColor(image, imageGrey, CV_RGB2GRAY);
+    imageGrey.update();
+
+    ofPolyline ofContour;
+    int ds = size * 6;
+    ofContour.addVertex(p0->x - ds, p0->y - ds);
+    ofContour.addVertex(p0->x + ds, p0->y - ds);
+    ofContour.addVertex(p0->x + ds, p0->y + ds);
+    ofContour.addVertex(p0->x - ds, p0->y + ds);
+    ofContour.close();
+
+    printGroundTruth(n);
+
+    // run detection
+    Mat mat = toCv(imageGrey.getPixels());
+    vector<Point2f> contour = toCv(ofContour);
+    ofVec2f ofCentroid = ofContour.getCentroid2D();
+    Point2f centroid = toCv(ofCentroid);
+    bool codeDetected = detector.detect(mat, contour, centroid, codeFormatted);
+    if (codeDetected) {
+        ShoulderCodec::unformat(codeFormatted, code);
+        result = ShoulderCodec::decode(code);
+        if (result == -1) {
+            cout << "code detection failure!" << endl;
+        }
+    } else {
+        result = -1;
+        cout << "no code detected!" << endl;
+    }
+    
+    // draw contour
+    ofContour.draw();
+
+    // draw result
+    ofSetColor(ofColor(255, 0, 0));
+    ostringstream oss;
+    oss << result << "!";
+    ofDrawBitmapString(oss.str(), p0->x, p0->y);
+    ofSetColor(WHITE);
+}
+
 //--------------------------------------------------------------
 void ofApp::draw(){
     if (showBg) {
@@ -171,7 +228,14 @@ void ofApp::draw(){
     if (addNoise) {
         ofDrawNoise();
     }
+    if (runDetection) {
+        ofDrawDetect();
+    }
     gui.draw();
+}
+
+void ofApp::getScreenImage(ofImage& image) {
+    image.grabScreen(0, 0, 1280, 720);
 }
 
 string ofApp::getCurrentImageFilePath() {
@@ -179,8 +243,8 @@ string ofApp::getCurrentImageFilePath() {
     ostringstream filename;
     filename << "sc" << (showBg ? "b" : "") << (addNoise ? "n" : "") << "_" <<
         "n" << n << "_" <<
-        "x" << x0 << "_" <<
-        "y" << y0 << "_" <<
+        "x" << p0->x << "_" <<
+        "y" << p0->y << "_" <<
         "r" << theta << "_" <<
         "s" << size << OUTPUT_EXT;
     return ofFilePath::join(outputDir, filename.str());
@@ -188,16 +252,21 @@ string ofApp::getCurrentImageFilePath() {
 
 void ofApp::saveCurrentImage() {
     string filePath = getCurrentImageFilePath();
-    ofImage image;
-    image.grabScreen(0, 0, 1280, 720);
+    getScreenImage(image);
     image.save(filePath);
 }
 
 //--------------------------------------------------------------
-void ofApp::keyPressed(int key){
-    if (key == 'r' || key == 'R') {
-        onClickRandomizeParameters();
-    } else if (key == 's' || key == 'S') {
+void ofApp::keyPressed(int key) {
+    if (key == 'b') {
+        showBg = !showBg;
+    } else if (key == 'd') {
+        runDetection = !runDetection;
+    } else if (key == 'n') {
+        addNoise = !addNoise;
+    } else if (key == 'r') {
+        randomizeParameters();
+    } else if (key == 's') {
         saveCurrentImage();
     }
 }
@@ -252,10 +321,9 @@ void ofApp::dragEvent(ofDragInfo dragInfo){
 
 }
 
-void ofApp::onClickRandomizeParameters() {
+void ofApp::randomizeParameters() {
     n = rand() % ShoulderCodec::VALUE_MAX;
-    x0 = 256 + rand() % 768;
-    y0 = 120 + rand() % 480;
+    p0 = ofVec2f(256 + rand() % 768, 120 + rand() % 480);
     size = 4 + rand() % 12;
     theta = rand() % 360;
     dTheta = -20 + rand() % 40;

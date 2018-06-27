@@ -8,6 +8,7 @@
 #include "ofxGui.h"
 
 #include "ShoulderCodec.hpp"
+#include "ShoulderDetector.hpp"
 
 using namespace cv;
 using namespace ofxCv;
@@ -21,18 +22,23 @@ private:
 
     ofImage background;
     ofImage noise;
-    bitset<16> code;
+    ofImage image;
+    ofImage imageGrey;
+    ShoulderDetector detector;
     bitset<24> codeFormatted;
+    bitset<16> code;
+    int result;
     string projectRoot;
 
     ofxPanel gui;
 
-    ofParameterGroup codeParameters;
+    ofParameterGroup imageParameters;
     ofParameter<bool> showBg;
     ofParameter<bool> addNoise;
+
+    ofParameterGroup codeParameters;
     ofParameter<int> n;
-    ofParameter<int> x0;
-    ofParameter<int> y0;
+    ofParameter<glm::vec2> p0;
     ofParameter<int> size;
     ofParameter<int> theta;
     ofParameter<int> dTheta;
@@ -42,13 +48,19 @@ private:
     ofParameter<float> occLeftUnits;
     ofParameter<float> occRightUnits;
 
+    ofParameter<bool> runDetection;
     ofxButton btnRandomizeParameters;
+    ofxButton btnSaveCurrentImage;
 
     void ofSetupNoise();
+
     void ofDrawShoulderCode();
     void ofDrawNoise();
+    void ofDrawDetect();
+
+    void getScreenImage(ofImage& image);
+
     string getCurrentImageFilePath();
-    void saveCurrentImage();
 public:
     void setup();
     void update();
@@ -66,5 +78,6 @@ public:
     void dragEvent(ofDragInfo dragInfo);
     void gotMessage(ofMessage msg);
 
-    void onClickRandomizeParameters();
+    void randomizeParameters();
+    void saveCurrentImage();
 };

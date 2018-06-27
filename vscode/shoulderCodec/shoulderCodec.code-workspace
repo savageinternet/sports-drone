@@ -18,7 +18,8 @@
 			"tuple": "cpp",
 			"utility": "cpp",
 			"vector": "cpp",
-			"iterator": "cpp"
+			"iterator": "cpp",
+			"__locale": "cpp"
 		}
 	}
 }
