@@ -13,6 +13,29 @@ var svg = d3.select('#chart-placeholder')
     .attr('width', width) // set its dimensions
     .attr('height', height);
 
+// allow ourselves to add markers to the svg
+var markers_data = [
+    { id: 0, name: 'circle', path: 'M 0, 0  m -5, 0  a 5,5 0 1,0 10,0  a 5,5 0 1,0 -10,0', viewbox: '-6 -6 12 12' }
+  , { id: 1, name: 'square', path: 'M 0,0 m -5,-5 L 5,-5 L 5,5 L -5,5 Z', viewbox: '-5 -5 10 10' }
+  , { id: 2, name: 'arrow', path: 'M 0,0 m -5,-5 L 5,0 L -5,5 Z', viewbox: '-5 -5 10 10' }
+  , { id: 2, name: 'stub', path: 'M 0,0 m -1,-5 L 1,-5 L 1,5 L -1,5 Z', viewbox: '-1 -5 2 10' }
+];
+var defs = svg.append('svg:defs')
+var markers = defs.selectAll('marker')
+    .data(markers_data)
+    .enter()
+    .append('svg:marker')
+      .attr('id', function(d){ return 'marker_' + d.name})
+      .attr('markerHeight', 2)
+      .attr('markerWidth', 2)
+      .attr('markerUnits', 'strokeWidth')
+      .attr('orient', 'auto')
+      .attr('refX', 0)
+      .attr('refY', 0)
+      .attr('viewBox', function(d){ return d.viewbox }).append('svg:path')
+        .attr('d', function(d){ return d.path })
+        .attr('fill', "black");
+
 var timeUnderlay = d3.select('#underlay')
       .append('svg')
       .attr('width', timeLineDims.width)
@@ -24,8 +47,6 @@ d3.json('/data.json')
   .then(function(data) {
     var mData = JSON.parse(JSON.stringify(data));
     data.tracked = filterData(data.tracked);
-    clearDrawing(svg);
-    clearDrawing(timeUnderlay);
     doDrawing(data);
     fixScale(data);
   });
@@ -246,6 +267,9 @@ function doDrawing(data) {
   var paths = svg.append("g")
       .attr("class", "paths");
 
+
+  // now we want the active paths to show up as more loud. what is an active path, you ask? well, it's a path that represents the 5s around the position of the scrubber thingy in the video seeker widget.
+
   var activePaths = svg.append("g")
       .attr("class", "activepaths")
       .selectAll("path")
@@ -260,14 +284,16 @@ function doDrawing(data) {
         .attr('opacity', 1.0);
 
   var dot = svg.append("g")
-      .attr("class", "dots")
-      .selectAll(".dot")
+      .attr("class", "playermarkers")
+      .selectAll(".playermarker")
       .data(interpolateData(0))
-      .enter().append("circle")
-        .attr("class", "dot")
-        .style("fill", function(d) { return d.color; })
+      .enter().append("path")
+        .attr("class", "playermarker")
+        .attr('marker-end', 'url(#marker_arrow)')
+        .attr("stroke", "black")
+        .attr("stroke-width", 5)
+        .attr("d", function(d) {return line([{"x":d.prevX, "y":d.prevY},{"x":d.x, "y":d.y}]); })
         .style("opacity", function(d) { return d.opacity; })
-        .attr("r", 6)
         .call(positionFade);
 
   // draw a label at the current position of each labelled thingy
@@ -298,7 +324,9 @@ function doDrawing(data) {
         y: interpolateValues(d.path, frame, "y"),
         color: color(d),
         opacity: opacity(d, frame),
-        path: filteredPath
+        path: filteredPath,
+        prevX: interpolateValues(d.path, frame-1, "x"),
+        prevY: interpolateValues(d.path, frame-1, "y")
       };
     });
   }
@@ -332,9 +360,11 @@ function doDrawing(data) {
   }
 
   function positionFade(obj) {
-    obj.attr("cx", function(d) { return x(d.x); })
-       .attr("cy", function(d) { return y(d.y); })
-       .style("opacity", function(d) { return d.opacity; });
+    obj.attr("d", function(d) { return line([{"x":d.prevX, "y":d.prevY},{"x":d.x, "y":d.y}]); })
+       .style("opacity", function(d) { return d.opacity; })
+       .attr("stroke-width", 5)
+       .attr("marker-end", "url(#marker_arrow)")
+       .attr("stroke", "black");
   }
 
   function positionText(obj) {
@@ -364,11 +394,8 @@ function doDrawing(data) {
     })
     .attr('fill', function(d) { return color(d); }) // we have to fill it now. :(
     .attr("stroke", function(d) { return color(d); })
-    .attr('opacity', .3)
+    .attr('opacity', .15)
     ;
-
-  // now we want the active paths to show up as more loud. what is an active path, you ask? well, it's a path that represents the 5s around the position of the scrubber thingy in the video seeker widget.
-
 
   // title it
   svg.append("text")
