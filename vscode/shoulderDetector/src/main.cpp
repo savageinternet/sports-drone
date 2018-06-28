@@ -1,9 +1,14 @@
 #include "ofMain.h"
 #include "ofApp.h"
 
+#include "WebcamConstants.hpp"
+
 //========================================================================
 int main() {
-    ofSetupOpenGL(1280, 720, OF_WINDOW);
+    ofSetupOpenGL(
+        WebcamConstants::CAMERA_WIDTH,
+        WebcamConstants::CAMERA_HEIGHT,
+        OF_WINDOW);
 
 	ofRunApp(new ofApp());
 }

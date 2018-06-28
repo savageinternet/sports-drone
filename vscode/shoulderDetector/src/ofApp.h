@@ -14,28 +14,89 @@ using namespace cv;
 using namespace ofxCv;
 using namespace std;
 
-class ofApp : public ofBaseApp{
-private:
-    static const int WHITE = 255;
+enum DetectionMode {
+    IMAGE,
+    VIDEO,
+    WEBCAM_SET_CONTOUR,
+    WEBCAM
+};
 
-    bitset<24> codeFormatted;
-    bitset<16> code;
-    int result;
-    ofPolyline ofContour;
-    ShoulderDetector detector;
-    ofImage image;
-    ofImage imageGrey;
-    string projectRoot;
-    bool ranImageDetection;
-
+struct ImageParameters {
     int n;
     int x0;
     int y0;
     float theta;
     int size;
+};
 
+class ofApp : public ofBaseApp{
+private:
+    // Color constants.
+    static const int BLACK = 0;
+    static const int WHITE = 255;
+
+    // Used to load images / videos and save test results.
+    string projectRoot;
+
+    /*
+     * Code location.  In IMAGE mode, this is supplied by ground-truth parameters
+     * embedded in the filename.  In VIDEO mode, this is detected using our object
+     * tracking.  In WEBCAM mode, this is selected by the user via mouse gestures;
+     * the special WEBCAM_SET_CONTOUR mode is provided to facilitate this.
+     */
+    ofPolyline ofContour;
+    ofVec2f ofCentroid;
+
+    /*
+     * Code detection and decoding.  
+     */
+    bitset<24> codeFormatted;
+    bitset<16> code;
+    int result;
+    ShoulderDetector detector;
+    bool detectionFinished;
+
+    /*
+     * Color and greyscale images.  The detector requires a greyscale image.
+     * In IMAGE mode, `image` is the loaded image.  In VIDEO and WEBCAM modes,
+     * `image` is the current frame.
+     */
+    ofImage image;
+    ofImage imageGrey;
+
+    // Image ground-truth parameters for IMAGE mode.
+    ImageParameters imageParameters;
+
+    // Video playback for VIDEO mode.
+    ofVideoPlayer video;
+
+    // Webcam capture for WEBCAM mode.
+    ofVideoGrabber cam;
+    bool skippedFirstFrame;
+
+    // Controls to set various modes.
     ofxPanel gui;
     ofxButton btnLoadImage;
+    ofxButton btnLoadVideo;
+    ofxButton btnLoadWebcam;
+
+    // Current detection mode.
+    DetectionMode detectionMode;
+
+    void performDetection();
+
+    void updateWindowTitle();
+    void updateImage();
+    void updateVideo();
+    void updateWebcam();
+
+    void drawCodeLocation();
+    void drawDetectionResult();
+    
+    void setImageCodeLocation();
+
+    static string getModeName(DetectionMode detectionMode);
+    static ImageParameters parseImageParameters(const string& filename);
 public:
     void setup();
     void update();
@@ -53,5 +114,7 @@ public:
     void dragEvent(ofDragInfo dragInfo);
     void gotMessage(ofMessage msg);
 
-    void onClickLoadImage();
+    void loadImage();
+    void loadVideo();
+    void loadWebcam();
 };

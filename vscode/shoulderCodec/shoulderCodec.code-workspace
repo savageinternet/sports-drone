@@ -19,7 +19,8 @@
 			"utility": "cpp",
 			"vector": "cpp",
 			"iterator": "cpp",
-			"__locale": "cpp"
+			"__locale": "cpp",
+			"ostream": "cpp"
 		}
 	}
 }
