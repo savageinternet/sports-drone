@@ -24,10 +24,10 @@ d3.json('/data.json')
   .then(function(data) {
     var mData = JSON.parse(JSON.stringify(data));
     data.tracked = filterData(data.tracked);
-    fixScale(data);
     clearDrawing(svg);
     clearDrawing(timeUnderlay);
     doDrawing(data);
+    fixScale(data);
   });
 
 
@@ -64,7 +64,6 @@ function durationToTime(duration) {
 
 function fixScale(data) {
   d3.select("#max-time").html(durationToTime(vid.duration));
-
   d3.select("#slider-time").attr("max", data.endFrame);
 }
 
@@ -135,6 +134,67 @@ function drawField(fieldType, dims) {
       .attr("fill", "none");
 }
 
+function offsetPathByVelocity(originalLine) {
+  var offsetLine = JSON.parse(JSON.stringify(originalLine));
+  for(var i = 0; i < offsetLine.length-1; i++) {
+    // offset each point depending on the velocity at that point
+    var velocity = distance(originalLine[i+1], originalLine[i]) /
+                    (originalLine[i+1].time - originalLine[i].time);
+
+    if (velocity == 0) {
+      // dot isn't movin
+      continue;
+    }
+
+    var scale = .5; // px per frame
+    var travelVector = {x: originalLine[i+1].x - originalLine[i].x / velocity,
+                        y: originalLine[i+1].y - originalLine[i].y / velocity};
+
+    var offsetVector = {};
+
+    if (travelVector.x != 0) {
+      // find a perpendicular vector
+      offsetVector = {x: -(travelVector.y)/travelVector.x,
+                      y: 1};
+      var offsetVectorLength = Math.sqrt(offsetVector.x*offsetVector.x + offsetVector.y*offsetVector.y);
+      // normalize
+      offsetVector.x /= offsetVectorLength;
+      offsetVector.y /= offsetVectorLength;
+      // now offset by speed of motion, scaled some
+      offsetVector.x *= velocity/scale;
+      offsetVector.y *= velocity/scale;
+    } else {
+      offsetVector = {x: 1, y: 0};
+    }
+
+    // now do the offset
+    offsetLine[i].x += offsetVector.x;
+    offsetLine[i].y += offsetVector.y;
+
+    if (Number.isNaN(offsetLine[i].x) || Number.isNaN(offsetLine[i].y)) {
+      // hm?
+      offsetLine[i] = originalLine[i];
+    }
+  }
+  // now do it again, but we gotta smooooooooooth it all out
+  var smoothWid = 3;
+  var smooth = function(idx) {
+    var xSum = 0;
+    var ySum = 0;
+    for (var i = idx-smoothWid; i <= idx+smoothWid; i++) {
+      xSum += offsetLine[i].x;
+      ySum += offsetLine[i].y;
+    }
+    return { x: xSum / (smoothWid*2+1), y: ySum / (smoothWid*2+1) };
+  }
+  for (var i = smoothWid; i < offsetLine.length-smoothWid; i++) {
+    // to smooth... we average the smoothWid points in front and behind.
+    offsetLine[i] = smooth(i);
+  }
+
+  return offsetLine;
+}
+
 function clearDrawing(drawing) {
   drawing.selectAll("*").remove();
 }
@@ -164,6 +224,11 @@ function doDrawing(data) {
   }
   function key(d) { return d.label; }
 
+  var line = d3.line()
+    .x(function(d) { return x(d.x); })
+    .y(function(d) { return y(d.y); })
+    .curve(d3.curveCardinal); // make it a li'l curvy
+
   // for data interpolation (when we skip frames)
   var bisect = d3.bisector(function(d) { return d.time; });
 
@@ -173,12 +238,26 @@ function doDrawing(data) {
       displayTime(parseInt(this.value));
     });
 
+  // create all the groups, and populate some with data!
+
   var interactionUnderlay = svg.append('g')
       .attr("class", "interaction");
 
-
   var paths = svg.append("g")
       .attr("class", "paths");
+
+  var activePaths = svg.append("g")
+      .attr("class", "activepaths")
+      .selectAll("path")
+      .data(interpolateData(0))
+      .enter()
+      .append('path')
+        .attr('d', function(d) {
+            return getVelocityOffsetSVGPath(d.path);
+          })
+        .attr('fill', function(d) { return color(d); })
+        .attr("stroke", function(d) { return color(d); })
+        .attr('opacity', 1.0);
 
   var dot = svg.append("g")
       .attr("class", "dots")
@@ -204,15 +283,22 @@ function doDrawing(data) {
         .call(positionText);
 
   // Interpolates the dataset for the given frame.
+  // we clip the "path" to a neighborhood of size 5s*30fps
   function interpolateData(frame) {
     return data.tracked.map(function(d) {
+      var eventHorizonLow = frame - 3*30;
+      var eventHorizonHigh = frame + 3*30;
+      var filteredPath = d.path.filter(function (elt) {
+        return elt.time >= eventHorizonLow && eventHorizonHigh >= elt.time;
+      });
+
       return {
         label: d.label,
         x: interpolateValues(d.path, frame, "x"),
         y: interpolateValues(d.path, frame, "y"),
         color: color(d),
         opacity: opacity(d, frame),
-        path: d.path
+        path: filteredPath
       };
     });
   }
@@ -231,10 +317,13 @@ function doDrawing(data) {
 
   // Updates the display to show the specified frame / time.
   function displayTime(frame) {
-    dot.data(interpolateData(frame), key)
+    var interpolated = interpolateData(frame);
+    dot.data(interpolated)
         .call(positionFade);
-    text.data(interpolateData(frame), key)
+    text.data(interpolated)
         .call(positionText);
+    activePaths.data(interpolated)
+        .call(activateNearbyPaths);
     vid.play()
       .then(function() {
         vid.currentTime = frame/d3.select("#slider-time").attr("max") * vid.duration;
@@ -254,81 +343,32 @@ function doDrawing(data) {
        .style("opacity", function(d) { return d.opacity; });
   }
 
+  function activateNearbyPaths(obj) {
+    obj.attr("d", function(d) { return getVelocityOffsetSVGPath(d.path); })
+      .attr("fill", function(d) { return d.color; });
+  }
+
   // draw a line for each labelled thingy
   var linez = paths.selectAll("path").data(data.tracked);
-  var line = d3.line()
-    .x(function(d) { return x(d.x); })
-    .y(function(d) { return y(d.y); })
-    //.curve(d3.curveCardinal); // make it a li'l curvy (don't do this; it kinda fucks with intersection calculations... :( ))
+
+  function getVelocityOffsetSVGPath(path) {
+    var offsetLine = offsetPathByVelocity(path);
+    // put them together; make sure to reverse the offset so we don't skip back to front
+    return line(path.concat(offsetLine.reverse()));
+  }
 
   var newLinez = linez.enter();
   newLinez.append('path')
     .attr('d', function(d) {
-      var originalLine = d.path;
-      var offsetLine = JSON.parse(JSON.stringify(originalLine));
-      for(var i = 0; i < offsetLine.length-1; i++) {
-        // offset each point depending on the velocity at that point
-        var velocity = distance(originalLine[i+1], originalLine[i]) /
-                        (originalLine[i+1].time - originalLine[i].time);
-
-        if (velocity == 0) {
-          // dot isn't movin
-          continue;
-        }
-
-        var scale = .5; // px per frame
-        var travelVector = {x: originalLine[i+1].x - originalLine[i].x / velocity,
-                            y: originalLine[i+1].y - originalLine[i].y / velocity};
-
-        var offsetVector = {};
-
-        if (travelVector.x != 0) {
-          // find a perpendicular vector
-          offsetVector = {x: -(travelVector.y)/travelVector.x,
-                          y: 1};
-          var offsetVectorLength = Math.sqrt(offsetVector.x*offsetVector.x + offsetVector.y*offsetVector.y);
-          // normalize
-          offsetVector.x /= offsetVectorLength;
-          offsetVector.y /= offsetVectorLength;
-          // now offset by speed of motion, scaled some
-          offsetVector.x *= velocity/scale;
-          offsetVector.y *= velocity/scale;
-        } else {
-          offsetVector = {x: 1, y: 0};
-        }
-
-        // now do the offset
-        offsetLine[i].x += offsetVector.x;
-        offsetLine[i].y += offsetVector.y;
-
-        if (Number.isNaN(offsetLine[i].x) || Number.isNaN(offsetLine[i].y)) {
-          // hm?
-          offsetLine[i] = originalLine[i];
-        }
-      }
-      // now do it again, but we gotta smooooooooooth it all out
-      var smoothWid = 3;
-      var smooth = function(idx) {
-        var xSum = 0;
-        var ySum = 0;
-        for (var i = idx-smoothWid; i <= idx+smoothWid; i++) {
-          xSum += offsetLine[i].x;
-          ySum += offsetLine[i].y;
-        }
-        return { x: xSum / (smoothWid*2+1), y: ySum / (smoothWid*2+1) };
-      }
-      for (var i = smoothWid; i < offsetLine.length-smoothWid; i++) {
-        // to smooth... we'll... average the smoothWid points in front and behind.
-        offsetLine[i] = smooth(i);
-      }
-
-      // put them together; make sure to reverse the offset so we dont' skip back to front
-      return line(originalLine.concat(offsetLine.reverse()));
+      return getVelocityOffsetSVGPath(d.path);
     })
     .attr('fill', function(d) { return color(d); }) // we have to fill it now. :(
     .attr("stroke", function(d) { return color(d); })
-    .attr('opacity', .7)
+    .attr('opacity', .3)
     ;
+
+  // now we want the active paths to show up as more loud. what is an active path, you ask? well, it's a path that represents the 5s around the position of the scrubber thingy in the video seeker widget.
+
 
   // title it
   svg.append("text")
@@ -370,4 +410,6 @@ function doDrawing(data) {
       }
 
   });
+
+  displayTime(parseInt(d3.select("#slider-time").attr("value")));
 }
