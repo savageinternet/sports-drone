@@ -81,6 +81,11 @@ void ofApp::setup(){
 
 //--------------------------------------------------------------
 void ofApp::update(){
+    int fps = ofGetFrameRate();
+    ostringstream oss;
+	oss << "Shoulder Code Generator [fps: " << fps << "]";
+	ofSetWindowTitle(oss.str());
+
     ShoulderCodec::encode(n, code);
     ShoulderCodec::format(code, codeFormatted);
 }
