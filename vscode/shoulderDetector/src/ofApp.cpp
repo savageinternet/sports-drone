@@ -118,7 +118,7 @@ void ofApp::updateWebcam() {
         }
         detectionFinished = false;
     } else if (!detectionFinished && detectionMode == DetectionMode::WEBCAM) {
-        //performDetection();
+        performDetection();
         detectionFinished = true;
     }
 }
@@ -145,6 +145,7 @@ void ofApp::drawCodeLocation() {
     ofContour.draw();
     int x0 = ofCentroid.x;
     int y0 = ofCentroid.y;
+    ofSetColor(ofColor(0, 255, 255));
     ofDrawLine(x0 - 5, y0, x0 + 5, y0);
     ofDrawLine(x0, y0 - 5, x0, y0 + 5);
     ofSetColor(WHITE);

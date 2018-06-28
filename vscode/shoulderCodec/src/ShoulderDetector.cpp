@@ -162,6 +162,9 @@ Candidate ShoulderDetector::averageCandidates(const vector<Candidate>& cs2x, int
 
 void ShoulderDetector::groupCandidates(const vector<Candidate>& cs, vector<Candidate>& out) {
     int n = cs.size();
+    if (n == 0) {
+        return;
+    }
 
     /*
      * To help in grouping candidates that cross the 0 / 360 edge, append a copy
