@@ -4,7 +4,7 @@ var margin = {top: 20, right: 20, bottom: 20, left: 40},
 
 var timeLineDims = {
     width: d3.select('#underlay').node().getBoundingClientRect().width,
-    height: d3.select('#underlay').node().getBoundingClientRect().height
+    height: d3.select('#underlay').node().getBoundingClientRect().height + 40
 };
 
 // stuff for structure
@@ -198,7 +198,7 @@ function offsetPathByVelocity(originalLine) {
     }
   }
   // now do it again, but we gotta smooooooooooth it all out
-  var smoothWid = 3;
+  var smoothWid = 5;
   var smooth = function(idx) {
     var xSum = 0;
     var ySum = 0;
@@ -307,6 +307,18 @@ function doDrawing(data) {
         .attr("text-anchor", "middle")
         .text(function(d) { return key(d); })
         .call(positionText);
+
+  // stuff for the time brush! that lil thing at the bottom that lets you select a larger period of time for highlightin'
+  var timeBrush = d3.brushX()
+    .extent([[0, 0], [timeLineDims.width, timeLineDims.height]])
+    .on("start brush", brushed);
+
+  timeUnderlay.append("g")
+    .call(timeBrush)
+    .call(timeBrush.move, [0, 100].map(x))
+    .selectAll(".overlay")
+      .each(function(d) { d.type = "selection"; }) // Treat overlay interaction as move.
+      .on("mousedown touchstart", brushcentered); // Recenter before brushing.
 
   // Interpolates the dataset for the given frame.
   // we clip the "path" to a neighborhood of size 5s*30fps
@@ -437,6 +449,20 @@ function doDrawing(data) {
       }
 
   });
+
+  //timebrush stuff!!
+  function brushcentered() {
+    var dx = x(100) - x(0), // Use a fixed width when recentering.
+        cx = d3.mouse(this)[0],
+        x0 = cx - dx / 2,
+        x1 = cx + dx / 2;
+    d3.select(this.parentNode).call(brush.move, x1 > width ? [width - dx, width] : x0 < 0 ? [0, dx] : [x0, x1]);
+  }
+
+  function brushed() {
+    var extent = d3.event.selection.map(x.invert, x);
+    dot.classed("selected", function(d) { return extent[0] <= d[0] && d[0] <= extent[1]; });
+  }
 
   displayTime(parseInt(d3.select("#slider-time").attr("value")));
 }
