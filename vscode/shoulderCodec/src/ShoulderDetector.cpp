@@ -4,43 +4,14 @@
 
 #include "GeometryUtils.hpp"
 #include "ShoulderDetector.hpp"
+#include "ShoulderTypes.hpp"
+#include "StringUtils.hpp"
 
 using namespace cv;
 using namespace std;
 
-PointValue::PointValue(Point2f p, uchar v) : p(p), v(v) {}
-
-Transition::Transition(int index, float strength) : index(index), strength(strength) {}
-
-ostream& operator<<(ostream& os, const PointValue& pv) {
-    os << "{p: " << pv.p << ", v: " << pv.v << "}";
-    return os;
-}
-
-ostream& operator<<(ostream& os, const Transition& t) {
-    os << "{index: " << t.index << ", strength: " << t.strength << "}";
-    return os;
-}
-
-ostream& operator<<(ostream& os, const Candidate& c) {
-    os << "{theta: " << c.theta <<
-        ", score: " << c.score <<
-        ", center: " << c.center <<
-        ", bitSize: " << c.bitSize << "}";
-    return os;
-}
-
-template<typename T> void ShoulderDetector::printVector(vector<T> v) {
-    int n = v.size();
-    if (n == 0) {
-        cout << "[]";
-        return;
-    }
-    cout << "[\n";
-    for (int i = 0; i < n - 1; i++) {
-        cout << "  " << v.at(i) << ",\n";
-    }
-    cout << "  " << v.at(n - 1) << "\n]";
+DetectionState ShoulderDetector::getDetectionState() const {
+    return detectionState;
 }
 
 void ShoulderDetector::getPointValues(const Mat& mat, LineIterator& it, vector<PointValue>& pvs) {
@@ -330,13 +301,13 @@ bool ShoulderDetector::detect(
         const vector<Point2f>& contour,
         const Point2f centroid,
         bitset<24>& codeFormatted) {
+    reset();
 
     /*
      * Cast multiple rays out from the centroid to the contour edges, collecting
      * candidate code locations in the process.
      */
     Point2f boundary;
-    vector<Candidate> cs;
     for (int theta = 0; theta < 360; theta += THETA_STEP) {
         float thetaRad = theta * M_PI / 180.0;
         if (!GeometryUtils::contourIntersection(contour, centroid, thetaRad, boundary)) {
@@ -354,39 +325,27 @@ bool ShoulderDetector::detect(
         int i = findBestTransitions(ts, score);
         if (i != -1) {
             Candidate c = getCandidate(ts, theta, score, pvs, i);
-            cs.push_back(c);
+            detectionState.cs.push_back(c);
         }
     }
-    
-    cout << "candidates: ";
-    printVector(cs);
-    cout << endl;
 
-    vector<Candidate> csGrouped;
-    groupCandidates(cs, csGrouped);
-
-    cout << "groups: ";
-    printVector(csGrouped);
-    cout << endl;
+    // group candidates into continuous runs by , then average
+    groupCandidates(detectionState.cs, detectionState.csGrouped);
 
     // select best candidates
-    Candidate c0, c1;
-    if (!findBestCandidates(csGrouped, c0, c1)) {
+    if (!findBestCandidates(detectionState.csGrouped, detectionState.c0, detectionState.c1)) {
         cout << "no best candidates!" << endl;
         return false;
     }
-    cout << c0 << ", " << c1 << endl;
 
     // read bits!
-    bitset<12> bs0;
-    bitset<12> bs1;
-    readBitsLattice(mat, c0, bs0);
-    readBitsLattice(mat, c1, bs1);
-    buildFormattedCode(bs0, bs1, codeFormatted);
-
-    cout << "bs0: " << bs0 << endl;
-    cout << "bs1: " << bs1 << endl;
-    cout << codeFormatted << endl;
+    readBitsLattice(mat, detectionState.c0, detectionState.bs0);
+    readBitsLattice(mat, detectionState.c1, detectionState.bs1);
+    buildFormattedCode(detectionState.bs0, detectionState.bs1, codeFormatted);
 
     return verifyFormattedCode(codeFormatted);
+}
+
+void ShoulderDetector::reset() {
+    detectionState.reset();
 }

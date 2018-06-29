@@ -152,6 +152,32 @@ void ofApp::drawCodeLocation() {
 }
 
 void ofApp::drawDetectionResult() {
+    const DetectionState detectionState = detector.getDetectionState();
+    cout << detectionState << endl;
+
+    // draw candidates
+    ofSetColor(ofColor(255, 0, 0));
+    Point2f p;
+    for (auto c : detectionState.cs) {
+        p = c.center;
+        ofDrawLine(p.x - 3, p.y, p.x + 3, p.y);
+        ofDrawLine(p.x, p.y - 3, p.x, p.y + 3);
+    }
+    ofSetColor(ofColor(255, 255, 0));
+    for (auto c : detectionState.csGrouped) {
+        p = c.center;
+        ofDrawLine(p.x - 2, p.y - 2, p.x + 2, p.y + 2);
+        ofDrawLine(p.x - 2, p.y + 2, p.x + 2, p.y - 2);
+    }
+
+    ofSetColor(ofColor(0, 255, 0));
+    ofNoFill();
+    p = detectionState.c0.center;
+    ofDrawCircle(p.x, p.y, 3);
+    p = detectionState.c1.center;
+    ofDrawCircle(p.x, p.y, 3);
+    ofFill();
+
     ostringstream oss;
     oss << result << "!";
     ofSetColor(ofColor(255, 0, 0));
