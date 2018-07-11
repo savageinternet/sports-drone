@@ -320,12 +320,27 @@ function doDrawing(data) {
       .each(function(d) { d.type = "selection"; }) // Treat overlay interaction as move.
       .on("mousedown touchstart", brushcentered); // Recenter before brushing.
 
+  function clipPathToRange(low, high) {
+    return data.tracked.map(function(d) {
+      var filteredPath = d.path.filter(function (elt) {
+        return elt.time >= low && high >= elt.time;
+      });
+
+      return {
+        label: d.label,
+        color: color(d),
+        path: filteredPath
+      };
+    });
+  }
+
   // Interpolates the dataset for the given frame.
   // we clip the "path" to a neighborhood of size 5s*30fps
   function interpolateData(frame) {
+    var range = 3*30*2;
     return data.tracked.map(function(d) {
-      var eventHorizonLow = frame - 3*30;
-      var eventHorizonHigh = frame + 3*30;
+      var eventHorizonLow = frame - range/2;
+      var eventHorizonHigh = frame + range/2;
       var filteredPath = d.path.filter(function (elt) {
         return elt.time >= eventHorizonLow && eventHorizonHigh >= elt.time;
       });
@@ -461,7 +476,9 @@ function doDrawing(data) {
 
   function brushed() {
     var extent = d3.event.selection.map(x.invert, x);
-    dot.classed("selected", function(d) { return extent[0] <= d[0] && d[0] <= extent[1]; });
+    var selectedPaths = clipPathToRange(extent[0], extent[1]);
+    activePaths.data(selectedPaths)
+        .call(activateNearbyPaths);
   }
 
   displayTime(parseInt(d3.select("#slider-time").attr("value")));
