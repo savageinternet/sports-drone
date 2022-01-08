@@ -1,11 +1,12 @@
-Hello, project partner!
+## Sports Drone Tracker
 
-I have added a lot of shit to the repository. :3 That's what I do!
+This was an experimental project by Savage Internet to see how feasible it would be to track amateur sports players (e.g. for jugger) by means of special optical codes printed on their jerseys.  The idea was to fly a drone over the field, capture footage, and use off-the-shelf object tracking together with the optical codes to distinguish players.
 
-So here's some things that are needed for this:
+This ran into a few snags:
 
-* OFX : openFrameworks. Get 'er downloaded from openframeworks.cc and just put the library any old place.
-  * ofxCv : this is an addon for OFX that doesn't come installed with it. You'll need to go to the "addons" directory in your downloaded OpenFrameworks library folder thingy, and then `git clone https://github.com/kylemcdonald/ofxCv`. To add it to your project, use the ProjectGenerator that ships with OFX to add it, and then you also have to go into your project.xcodeproj file and change the HEADER_SEARCH_PATHS line to `HEADER_SEARCH_PATHS = $(OF_CORE_HEADERS) "../../../addons/ofxOpenCv/libs/opencv/include/" "../../../addons/ofxCv/libs/ofxCv/include/"`
+- it's difficult to get footage at high enough resolution of the entire field to actually distinguish optical codes on players' jerseys;
+- drones don't really have great battery life, making it difficult to get footage of an entire game.
 
-* C++
-  * I hate C++, you hate C++, but we all write in C++. Since we have to do JSON shit in C++, we can be a li'l sad or we can add in a library that does it for us. I am using nlohmann/json. Surprise! This ships as a part of OFX. So you literally don't have to do anything to make this work.
+If we were to resurrect this project, we'd probably try just the object tracking part, and use a stationary boom to elevate a fixed camera above the field.  We might also consider multiple cameras at different locations.
+
+Anyways, this was a fun project!
